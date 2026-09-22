@@ -15,7 +15,10 @@ jobs:
 
       - name: Tải file Excel mới nhất từ OneDrive
         run: |
-          curl -L -f --retry 3 "${{ secrets.EXCEL_DOWNLOAD_URL }}" -o data.xlsx.new
+          curl -L -f --retry 3 \
+            -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36" \
+            -H "Accept: */*" \
+            "${{ secrets.EXCEL_DOWNLOAD_URL }}" -o data.xlsx.new
 
       - name: So sánh và commit nếu có thay đổi
         run: |
