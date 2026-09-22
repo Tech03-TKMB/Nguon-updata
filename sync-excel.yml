@@ -1,0 +1,32 @@
+name: Sync Excel từ OneDrive
+
+on:
+  schedule:
+    - cron: '*/15 * * * *'   # chạy tự động mỗi 15 phút
+  workflow_dispatch: {}       # cho phép bấm nút "Run workflow" để cập nhật ngay lập tức
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Tải file Excel mới nhất từ OneDrive
+        run: |
+          curl -L -f --retry 3 "${{ secrets.EXCEL_DOWNLOAD_URL }}" -o data.xlsx.new
+
+      - name: So sánh và commit nếu có thay đổi
+        run: |
+          if [ ! -f data.xlsx ] || ! cmp -s data.xlsx.new data.xlsx; then
+            mv data.xlsx.new data.xlsx
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git add data.xlsx
+            git commit -m "Đồng bộ dữ liệu Excel từ OneDrive"
+            git push
+          else
+            echo "Không có thay đổi, bỏ qua."
+            rm -f data.xlsx.new
+          fi
