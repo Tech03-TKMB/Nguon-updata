@@ -1,0 +1,1969 @@
+<!doctype html><html lang="vi"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Tính toán số mét cuộn màng nguyên vật liệu</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+:root{
+  --ink:#1c2530; --sub:#5b6672; --line:#dbe1e8; --bg:#f5f7f9; --card:#ffffff;
+  --accent:#1f5fa8; --accent-ink:#ffffff; --accent-soft:#eaf2fb;
+  --good:#1c7a4d; --good-soft:#e8f7ee; --bad:#c0392b; --bad-soft:#fdecea; --warn:#a06a00; --warn-soft:#fff6e0;
+  --radius:12px;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --ink:#e8edf2; --sub:#a7b1bc; --line:#31404d; --bg:#111a22; --card:#17222c;
+    --accent:#5b9bdb; --accent-ink:#0b1520; --accent-soft:#173049;
+    --good:#5fd394; --good-soft:#123023; --bad:#ff8b80; --bad-soft:#3a1512; --warn:#f0c25e; --warn-soft:#3a2c04;
+  }
+}
+:root[data-theme="dark"]{
+  --ink:#e8edf2; --sub:#a7b1bc; --line:#31404d; --bg:#111a22; --card:#17222c;
+  --accent:#5b9bdb; --accent-ink:#0b1520; --accent-soft:#173049;
+  --good:#5fd394; --good-soft:#123023; --bad:#ff8b80; --bad-soft:#3a1512; --warn:#f0c25e; --warn-soft:#3a2c04;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:"Be Vietnam Pro",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;font-size:14px;line-height:1.45;margin:0}
+.wrap{max-width:1180px;margin:0 auto;padding-inline:16px;padding-block:16px 60px}
+.mono, .val, .result-line .val, table td, table th, input, select{font-variant-numeric:tabular-nums}
+.mono{font-family:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace}
+.result-line .val, .machine-card .specs, table td{font-family:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace}
+h1,h2,h3{font-family:"Be Vietnam Pro",-apple-system,BlinkMacSystemFont,sans-serif;text-wrap:balance}
+.table-scroll{overflow-x:auto}
+header.topbar{display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px;padding:10px 16px;background:var(--card);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:20}
+header.topbar img{height:40px;width:auto;display:block}
+header.topbar h1{font-size:16px;font-weight:700;margin:0;flex:1 1 220px;min-width:220px}
+header.topbar h1 span{display:block;font-size:11px;font-weight:500;color:var(--sub)}
+@media (max-width:460px){header.topbar img{height:32px}header.topbar h1{font-size:14.5px}}
+.btn{appearance:none;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:9px;padding:9px 14px;font-size:13.5px;font-weight:600;cursor:pointer;white-space:nowrap}
+.btn:hover{border-color:var(--accent)}
+.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.btn.primary:hover{filter:brightness(1.06)}
+.btn.ghost{background:transparent;border-color:transparent;color:var(--sub)}
+.btn.small{padding:5px 10px;font-size:12px}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn.danger{background:var(--bad);color:#fff;border-color:var(--bad)}
+
+.stepper{display:flex;flex-wrap:wrap;gap:6px;margin:16px 0;font-size:12px;color:var(--sub)}
+.stepper .chip{padding:4px 10px;border-radius:999px;border:1px solid var(--line);background:var(--card)}
+.stepper .chip.on{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);font-weight:700}
+.stepper .chip.done{background:var(--good-soft);color:var(--good);border-color:var(--good)}
+
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:18px;margin-bottom:16px}
+.card h2{font-size:15px;margin:0 0 4px;font-weight:700}
+.card h3{font-size:13px;margin:0 0 10px;font-weight:700;color:var(--sub);text-transform:uppercase;letter-spacing:.02em}
+.card .hint{font-size:12px;color:var(--sub);margin-bottom:14px}
+
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:18px}
+@media (max-width:820px){.grid2,.grid3{grid-template-columns:1fr}}
+
+/* row-nowrap: like grid3 but the items always stay on ONE horizontal row (scrolls sideways on
+   narrow screens instead of wrapping to a new row) — used where columns must stay aligned
+   side-by-side regardless of how many there are (e.g. Layer 1/3/5/7 cùng 1 hàng). */
+.row-nowrap{display:flex;gap:18px;align-items:start;overflow-x:auto;padding-bottom:6px}
+.row-nowrap > .field{flex:1 1 220px;min-width:220px;margin-bottom:0}
+
+.field{margin-bottom:12px}
+.field label{display:block;font-size:12.5px;font-weight:600;color:var(--sub);margin-bottom:4px}
+.field label .req{color:var(--bad)}
+.field .subnote{font-size:11px;color:var(--sub);margin-top:3px}
+input[type=text],input[type=number],select,textarea{
+  width:100%;padding:9px 10px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);font-size:13.5px;font-family:inherit
+}
+input:focus,select:focus,textarea:focus{outline:2px solid var(--accent);outline-offset:0}
+.row-inline{display:flex;gap:8px;align-items:center}
+.yn{display:flex;gap:8px}
+.yn button{flex:1;padding:8px 6px;border:1px solid var(--line);background:var(--bg);border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;color:var(--ink)}
+.yn button.active{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+
+.info-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:10px 12px;align-items:end}
+.info-cols{display:grid;grid-template-columns:1fr 1fr;grid-auto-rows:minmax(0,auto);gap:14px 16px;align-items:start}
+@media (max-width:520px){.info-cols{grid-template-columns:1fr}.info-cols .field-sm{grid-column:1!important}}
+.field-sm{margin-bottom:0;width:100%}
+.field-sm input,.field-sm select{width:100%}
+.field-sm label{display:block;font-size:13.5px;font-weight:600;color:var(--sub);margin-bottom:5px}
+.field-sm input,.field-sm select{padding:9px 10px;font-size:14.5px}
+.field-sm .yn{gap:8px}
+.field-sm .yn button{padding:9px 6px;font-size:13.5px}
+
+.card-head{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:4px}
+.card-head h2{margin:0}
+.nav-top{display:flex;gap:8px;flex-wrap:wrap}
+
+.result-line{display:flex;justify-content:space-between;gap:10px;padding:7px 0;border-bottom:1px dashed var(--line);font-size:13px}
+.result-line:last-child{border-bottom:none}
+.result-line .lab{color:var(--sub)}
+.result-line .val{font-weight:700;font-variant-numeric:tabular-nums}
+.result-line .val.small{font-weight:600;font-size:12px}
+
+.tag{display:inline-block;font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px}
+.tag.good{background:var(--good-soft);color:var(--good)}
+.tag.bad{background:var(--bad-soft);color:var(--bad)}
+.tag.warn{background:var(--warn-soft);color:var(--warn)}
+
+.note{background:var(--accent-soft);border:1px solid var(--accent);border-radius:9px;padding:10px 12px;font-size:12.5px;color:var(--ink);margin:10px 0}
+.note.warn{background:var(--warn-soft);border-color:var(--warn)}
+.note.bad{background:var(--bad-soft);border-color:var(--bad)}
+
+table{width:100%;border-collapse:collapse;font-size:12.8px}
+table th, table td{padding:7px 8px;border-bottom:1px solid var(--line);text-align:right}
+table th:first-child, table td:first-child{text-align:left}
+table th{color:var(--sub);font-weight:700;font-size:11.5px;text-transform:uppercase}
+
+.layer-row{display:grid;grid-template-columns:88px 1fr 84px;gap:8px;align-items:end;margin-bottom:10px}
+@media (max-width:700px){.layer-row{grid-template-columns:1fr}}
+
+.machine-card{border:1px solid var(--line);border-radius:10px;padding:10px;cursor:pointer;display:flex;gap:10px;align-items:center;background:var(--bg)}
+.machine-card.sel{border-color:var(--accent);background:var(--accent-soft)}
+.machine-card .ic{width:46px;height:46px;border-radius:8px;background:var(--card);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;border:1px solid var(--line)}
+.machine-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px}
+.machine-card .specs{font-size:11px;color:var(--sub);margin-top:2px}
+
+.searchsel{position:relative}
+.searchsel .opts{position:absolute;top:100%;left:0;right:0;background:var(--card);border:1px solid var(--line);border-radius:8px;max-height:260px;overflow:auto;z-index:30;box-shadow:0 8px 24px rgba(0,0,0,.15);display:none}
+.searchsel .opts.show{display:block}
+.searchsel .opts div{padding:8px 10px;cursor:pointer;font-size:13px}
+.searchsel .opts div:hover, .searchsel .opts div.hi{background:var(--accent-soft)}
+.searchsel .opts .none{color:var(--sub);cursor:default}
+
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:flex-start;justify-content:center;z-index:100;padding:40px 16px;overflow:auto}
+.modal-bg.show{display:flex}
+.modal{background:var(--card);border-radius:14px;max-width:640px;width:100%;padding:22px 24px;position:relative;border:1px solid var(--line)}
+.modal .xbtn{position:absolute;top:14px;right:14px;background:var(--bad);color:#fff;border:none;width:30px;height:30px;border-radius:999px;font-size:16px;font-weight:700;cursor:pointer;line-height:1}
+.modal h2{margin-top:0}
+.modal ol,.modal ul{padding-left:20px}
+.modal li{margin-bottom:8px}
+
+.choice2{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;max-width:940px;margin:0 auto}
+@media (max-width:600px){.choice2{grid-template-columns:1fr}}
+.joints-row{display:grid;grid-template-columns:1fr 1fr 32px;gap:8px;align-items:end;margin-bottom:8px}
+@media (max-width:600px){.joints-row{grid-template-columns:1fr}}
+.rm-row-btn{background:var(--bad-soft);border:1px solid var(--bad);color:var(--bad);border-radius:8px;cursor:pointer;font-weight:700;height:38px}
+.choice-card{border:2px solid var(--line);border-radius:14px;padding:26px 18px;text-align:center;cursor:pointer;background:var(--card)}
+.choice-card:hover{border-color:var(--accent)}
+.choice-card .emoji{font-size:34px;margin-bottom:10px}
+.choice-card h3{margin:0 0 6px;font-size:17px;text-transform:none;letter-spacing:0;color:var(--ink)}
+.choice-card p{margin:0;font-size:12.5px;color:var(--sub)}
+
+.footer-nav{display:flex;justify-content:space-between;gap:10px;margin-top:18px}
+.nvl-table th:not(:first-child),.nvl-table td:not(:first-child){text-align:center}
+.phe-table th,.phe-table td{text-align:center}
+.phe-table th:first-child,.phe-table td:first-child{text-align:center}
+.nvl-table th.nvl-highlight,.nvl-table td.nvl-highlight{background:var(--warn-soft)}
+.result-line .val.val-emph{color:var(--bad);font-weight:800}
+
+.structure-grid{display:grid;grid-template-columns:1fr 1fr;gap:28px}
+.structure-grid > .order-col{border-left:1px solid var(--line);padding-left:22px}
+@media (max-width:820px){
+  .structure-grid{grid-template-columns:1fr}
+  .structure-grid > .order-col{border-left:none;padding-left:0;border-top:1px solid var(--line);padding-top:16px;margin-top:6px}
+}
+.pill-list{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.pill-list .pill{font-size:11.5px;padding:3px 9px;border-radius:999px;background:var(--bg);border:1px solid var(--line)}
+[hidden]{display:none!important}
+.overrideflag{font-size:10.5px;color:var(--accent);font-weight:700;margin-left:6px}
+.info-i{display:inline-flex;align-items:center;justify-content:center;width:15px;height:15px;border-radius:999px;background:var(--sub);color:var(--card);font-size:10px;font-weight:800;cursor:help;margin-left:5px}
+
+/* divider variant: adds a vertical rule between columns of a grid2/grid3, for sections that
+   otherwise sit too close together to read as separate blocks */
+.divided > div:not(:first-child){border-left:1px solid var(--line);padding-left:20px}
+@media (max-width:820px){
+  .divided > div:not(:first-child){border-left:none;padding-left:0;border-top:1px solid var(--line);padding-top:14px;margin-top:4px}
+}
+.grid-rphe{display:grid;grid-template-columns:1fr 1.5fr;gap:18px;align-items:start}
+@media (max-width:820px){.grid-rphe{grid-template-columns:1fr}}
+.grid-rphe .note{margin:0}
+
+.machine-card{position:relative}
+.avail-badge{position:absolute;top:8px;right:8px;font-size:15px;line-height:1}
+.avail-badge.yes{color:var(--good)}
+.avail-badge.no{color:var(--bad)}
+
+.hl-input{background:var(--warn-soft)!important;border-color:var(--warn)!important;font-weight:700}
+.home-btns{display:flex;gap:8px;flex-wrap:wrap}
+.home-btn{background:var(--accent-soft);border-color:var(--accent);color:var(--accent);font-size:12.5px;padding:8px 12px}
+#homeResetBtn{background:var(--bad-soft);border-color:var(--bad);color:var(--bad)}
+</style></head><body>
+
+<div id="app"></div>
+<div id="dataSyncBanner" style="display:none;position:sticky;top:0;z-index:25;padding:8px 16px;font-size:12.5px;text-align:center"></div>
+
+<div class="modal-bg" id="guideModal">
+  <div class="modal">
+    <button class="xbtn" onclick="closeGuide()">✕</button>
+    <h2>Hướng dẫn nhanh</h2>
+    <ol>
+      <li><b>Chọn loại sản phẩm</b>: Túi thành phẩm (cần cắt túi) hoặc Cuộn ghép bán trực tiếp.</li>
+      <li><b>Nhập quy cách</b>: kích thước túi (hoặc khổ cuộn), số màu, số nhãn và các tuỳ chọn phủ mờ điểm / tề-đảo / chia nhãn.</li>
+      <li><b>Nhập cấu trúc màng</b>: chọn mã màng và độ dày cho từng lớp (Layer 1/3/5/7).</li>
+      <li>Công cụ tự tính <b>PTI, khổ bánh thun, khổ màng, phế &amp; setup, thứ tự ghép</b> — mọi giá trị auto đều có ô để bạn nhập lại nếu thực tế khác.</li>
+      <li><b>Chọn máy</b> chia/đảo (nếu có), máy ghép, máy in đang dùng — hệ thống lấy năng lực nhỏ nhất trong các máy đã chọn để tính số mét tối đa.</li>
+      <li>Xem <b>số mét cuộn nguyên vật liệu</b> tối ưu theo bội số của cuộn ghép chuẩn, và dùng nút <b>“Tính số mối nối từ số mét NCC”</b> để ước tính số mối nối khi nhà cung cấp giao cuộn không đúng số mét chuẩn.</li>
+    </ol>
+    <p style="color:var(--sub);font-size:12px">Các ô có nhãn màu xanh "nhập lại" luôn ưu tiên giá trị bạn tự nhập so với giá trị auto.</p>
+  </div>
+</div>
+
+<script id="data-blob" type="application/json">{"MATERIALS": [{"code": "HCF-MATT-BOPP", "name": "Matte BOPP high COF", "group": "PP", "density": 0.91}, {"code": "CLEAR-BOPP", "name": "Clear BOPP", "group": "PP", "density": 0.91}, {"code": "CLEAR-BOPP-HS", "name": "Clear BOPP Heatsealed", "group": "PP", "density": 0.91}, {"code": "CLEAR-CPP", "name": "Clear CPP", "group": "PP", "density": 0.91}, {"code": "CLEAR-CPP-L", "name": "Clear CPP-L", "group": "PP", "density": 0.91}, {"code": "HCF-CLEAR-CPP", "name": "High COF Clear CPP", "group": "PP", "density": 0.91}, {"code": "CLEAR-KPET", "name": "Clear KPET", "group": "PET", "density": 1.38}, {"code": "CLEAR-PA", "name": "Clear PA", "group": "PA", "density": 1.15}, {"code": "CLEAR-PA-A", "name": "Clear PA - type A", "group": "PA", "density": 1.15}, {"code": "CLEAR-PA-B", "name": "Clear PA - type B", "group": "PA", "density": 1.15}, {"code": "CLEAR-PA-C", "name": "Clear PA - type C", "group": "PA", "density": 1.15}, {"code": "CLEAR-PA-D", "name": "Clear PA - type D", "group": "PA", "density": 1.15}, {"code": "CLEAR-PET", "name": "Clear PET", "group": "PET", "density": 1.38}, {"code": "AUT-CLEAR-LL", "name": "Clear LLDPE Automation", "group": "PE", "density": 0.925}, {"code": "GEN-CLEAR-LL", "name": "Clear LLDPE General", "group": "PE", "density": 0.925}, {"code": "VAC-CLEAR-LL", "name": "Clear LLDPE Vaccum", "group": "PE", "density": 0.925}, {"code": "MATT-BOPP", "name": "Matte BOPP", "group": "PP", "density": 0.87}, {"code": "METAL-CPP", "name": "Metalized CPP", "group": "MCPP", "density": 0.91}, {"code": "METAL-PET", "name": "Metalized PET", "group": "MPET", "density": 1.38}, {"code": "PP-SL", "name": "PP Sealable", "group": "PP", "density": 0.91}, {"code": "AL", "name": "Aluminium", "group": "AL", "density": 2.7}, {"code": "AUT-WHITE-LL", "name": "White LLDPE Automation", "group": "PE", "density": 0.95}, {"code": "WHITE-PAPER", "name": "White Paper", "group": "PAPER", "density": null}, {"code": "PEAR-BOPP", "name": "Pearlized BOPP", "group": "PP", "density": 0.91}, {"code": "KRAFT-PAPER", "name": "Kraft Paper", "group": "PAPER", "density": null}, {"code": "AS-CPP", "name": "Antistatic CPP", "group": "PP", "density": 0.91}, {"code": "PPE", "name": "PP-PE", "group": "PP", "density": 0.91}, {"code": "SOIL-CLEAR-LL", "name": "Clear LLDPE Soil", "group": "PE", "density": 0.925}, {"code": "SOIL-WHITE-LL", "name": "White LLDPE Soil", "group": "PE", "density": 0.95}, {"code": "GEN-MATT-LL", "name": "Matte LLDPE General", "group": "PE", "density": 0.925}, {"code": "CLEAR-PP", "name": "Clear PP - sealable corona one side", "group": "PP", "density": 0.91}, {"code": "WHITE-SLL", "name": "White LLDPE low SIT", "group": "PE", "density": 0.95}, {"code": "PCR-CLEAR-LLDPE", "name": "PCR-CLEAR-LLDPE", "group": "PE", "density": 0.925}, {"code": "PCR-WHITE-LL", "name": "PCR-WHITE-LL", "group": "PE", "density": 0.95}, {"code": "CPE", "name": "Cast LLDPE", "group": "PE", "density": 0.94}, {"code": "CLEAR-LLP", "name": "Clear LLDPE printing", "group": "PE", "density": 0.94}, {"code": "CLEAR-SLL", "name": "CLEAR LLDPE sealant Low SIT", "group": "PE", "density": 0.925}, {"code": "WHITE-SLL-CS", "name": "White LLDPE sealant - cutseal bag", "group": "PE", "density": 0.95}, {"code": "METAL-PET-SPE", "name": "MPTX Metalized PET SPE", "group": "MPET", "density": 1.38}, {"code": "CLEAR-PET-SPE", "name": "Clear PET SPE", "group": "PET", "density": 1.38}, {"code": "PCR-CLEAR-BOPP", "name": "Clear BOPP PCR", "group": "PP", "density": 0.91}, {"code": "BCT-METAL-BOPP", "name": "Metalized BOPP Both sides-Corona Treated", "group": "MOPP", "density": 0.91}, {"code": "HBE-WHITE-SLL", "name": "High barrier Coex EVOH white LLDPE sealant", "group": "PE", "density": 0.95}, {"code": "BCT-UHB-METAL-BOPP", "name": "Metalized BOPP Both corona treated Ultra high barrier", "group": "MOPP", "density": 0.91}, {"code": "OTB-WHITE-LL", "name": "White LLDPE Outerbag automation", "group": "PE", "density": 0.95}, {"code": "ATF-CLEAR-CPP", "name": "Clear CPP antifogging", "group": "PP", "density": 0.9}, {"code": "VAC-WHITE-LL", "name": "White LLDPE Vaccum", "group": "PE", "density": 0.95}, {"code": "MÀNG NGỌC", "name": "MÀNG NGỌC", "group": "PE", "density": 0.7}, {"code": "BOPP MATTE", "name": "BOPP MATTE", "group": "PP", "density": 0.83}, {"code": "LLDPE WHITE", "name": "LLDPE WHITE", "group": "PE", "density": 0.99}, {"code": "OPE", "name": "OPE", "group": "PE", "density": 0.935}, {"code": "HTS-CLEAR-BOPP", "name": "HTS-CLEAR-BOPP", "group": "PP", "density": 0.91}, {"code": "GEN-WHITE-LL", "name": "White LLDPE General", "group": "PE", "density": 0.95}, {"code": "HBE-CLEAR-SLL", "name": "High barrier Coex EVOH clear LLDPE sealant lowsit", "group": "PE", "density": 0.94}, {"code": "PIR47-WHITE-SLL", "name": "White LLDPE low SIT PIR47", "group": "PE", "density": 0.95}, {"code": "BCT-GEN-CLEAR-LLP", "name": "BCT-GEN-CLEAR-LLP", "group": "PE", "density": 0.94}, {"code": "BCT-GEN-CLEAR-DLL", "name": "Clear MDOPE Both corona treated General", "group": "PE", "density": 0.95}, {"code": "GEN-WHITE-SLL", "name": "White LLDPE low SIT General", "group": "PE", "density": 0.95}, {"code": "BCT-CLEAR-BOPP", "name": "Clear bothside corona treatment  BOPP", "group": "PP", "density": 0.91}, {"code": "PIR36-WHITE-SLL", "name": "White LLDPE low SIT PIR36", "group": "PE", "density": 0.95}, {"code": "MNO-CLEAR-SLL", "name": "Clear monolayer lowsit", "group": "PE", "density": 0.94}, {"code": "HBE-1CT-WHITE-PP", "name": "PP Sealable Coex EVOH 1 side corona treatment", "group": "PP", "density": 0.94}, {"code": "CLEAR-XPE", "name": "Clear XPE  ", "group": "PE", "density": 0.935}, {"code": "BCT-GEN-CLEAR-XPE", "name": "Clear XPE Both corona treated General", "group": "PE", "density": 0.94}, {"code": "MPTX-METAL-PET", "name": "MPTX Metalized PET", "group": "MPET", "density": 1.38}, {"code": "PIR30-VAC-CLEAR-LL", "name": "Clear LLDPE Vaccum PIR 30%", "group": "PE", "density": 0.93}, {"code": "HCF-NSP-CLEAR-LLP", "name": "HCF-NSP-CLEAR-LLP", "group": "PE", "density": 0.94}, {"code": "BCT-CLEAR-XPE", "name": "Clear XPE Both side corona treated", "group": "PE", "density": 0.94}, {"code": "BCT-CLEAR-DLL", "name": "BCT-CLEAR-DLL", "group": "PE", "density": 0.95}, {"code": "HBPA-WHITE-LL", "name": "White LLDPE high barrier Coex PA - PE", "group": "PE", "density": 0.967}, {"code": "GEN-CLEAR-SLL", "name": "Clear LLDPE low SIT General", "group": "PE", "density": 0.925}, {"code": "HBC-MATT-BOPP", "name": "MattOPP-high barrier coated", "group": "PP", "density": 0.91}, {"code": "HBE-CLEAR-LL", "name": "High barrier Coex EVOH clear LLDPE sealant lowsit", "group": "PE", "density": 0.93}, {"code": "MST-CLEAR-LL", "name": "clear LLDPE Medium SIT", "group": "PE", "density": 0.925}, {"code": "HCF-CLEAR-LLP", "name": "Clear LLDPE for printing high COF", "group": "PE", "density": 0.94}, {"code": "GEN-CLEAR-LLP", "name": "Clear LLDPE printing General", "group": "PE", "density": 0.944}, {"code": "BHS-CLEAR-BOPP", "name": "Clear BOPP both side Heatsealed", "group": "PP", "density": 0.91}, {"code": "GEN-MATT-LLP", "name": "Matt LLDPE for printing", "group": "PE", "density": 0.91}, {"code": "ALOX-PET", "name": "Aluminum oxide PET", "group": "ALOX-PET", "density": 1.4}, {"code": "PCR40-CLEAR-LL", "name": "Clear LLDPE Post consumer recycled 40%", "group": "PE", "density": 0.925}, {"code": "HSL-CLEAR-BOPP", "name": "Clear BOPP Heat-sealable", "group": "PP", "density": 0.91}, {"code": "LCF-CLEAR-BOPP", "name": "Clear BOPP Low COF", "group": "PP", "density": 0.91}, {"code": "ATS-CLEAR-PET", "name": "Clear Antiskid PET", "group": "PET", "density": 1.38}, {"code": "NSP-WHITE-LL", "name": "White LLDPE Non-slip", "group": "PE", "density": 0.953}, {"code": "NSP-CLEAR-LL", "name": "Clear LLDPE Non-slip", "group": "PE", "density": 0.921}, {"code": "NSP-WHITE-SLL", "name": "White LLDPE Non-slip lowSIT", "group": "PE", "density": 0.953}, {"code": "CLEAR-KCPP", "name": "Clear CPP code KCPP", "group": "PP", "density": 0.91}, {"code": "UV03-WHITE-SLL", "name": "White Low SIT LLDPE UV 1.5%", "group": "PE", "density": 0.95}, {"code": "GEN-CLEAR-DLL", "name": "Clear MDOPE General", "group": "PE", "density": 0.95}, {"code": "PCR50-WHGR-LLP", "name": "White LLDPE Printing Post consumer recycled 50%", "group": "PE", "density": 0.925}, {"code": "HCF-MNO-WHITE-SLL", "name": "white Low SIT LLDPE Mono layer High COF", "group": "PE", "density": 0.95}, {"code": "VAC-WHITE-SLL", "name": "White LLDPE Vacuum lowsit", "group": "PE", "density": 0.951}, {"code": "VAC-CLEAR-SLL", "name": "Clear LLDPE Vacuum lowsit", "group": "PE", "density": 0.925}, {"code": "PIR40-VAC-CLEAR-LL", "name": "Clear LLDPE Vaccum PIR 40%", "group": "PE", "density": 0.92}, {"code": "PIR37-CLEAR-SLL", "name": "Clear LLDPE lowsit PIR 37%", "group": "PE", "density": 0.92}, {"code": "BCT-HBE-CLEAR-DLL", "name": "Clear MDOPE Both corona treated Coex EVOH", "group": "PE", "density": 0.94}, {"code": "NCT-BHS-VAC-CLEAR-SLL", "name": "NCT-BHS-VAC-CLEAR-SLL", "group": "PE", "density": 0.925}, {"code": "UV03-CLEAR-SLL", "name": "Clear Low SIT LLDPE UV 1.5%", "group": "PE", "density": 0.925}, {"code": "PIR50-WHBL-LLP", "name": "PIR50-WHBL-LLP", "group": "PE", "density": 0.925}, {"code": "MATT-XPE", "name": "MATT-XPE", "group": "PE", "density": 0.94}, {"code": "MST-WHITE-LL", "name": "White LLDPE Medium SIT", "group": "PE", "density": 0.95}, {"code": "GEN-CLEAR-CLL", "name": "Clear Cast LLDPE General", "group": "PE", "density": 0.925}, {"code": "BCT-BHS-CLEAR-BOPP", "name": "Clear BOPP Both corona treated Both Heat-sealable", "group": "PP", "density": 0.91}, {"code": "AUV-CLEAR-LL", "name": "Clear LLDPE Anti UV", "group": "PE", "density": 0.925}, {"code": "BHS-ATF-CLEAR-BOPP", "name": "Clear BOPP Both Heat-sealable Antifog", "group": "PP", "density": 0.91}, {"code": "NCO-ALOX-PET", "name": "Aluminum oxide PET Non coating", "group": "ALOX-PET", "density": 1.4}, {"code": "NSP-PIR38-WHITE-SLL", "name": "White Low SIT LLDPE Post industrial recycled 38% Non-Slip", "group": "PE", "density": 0.99}, {"code": "PIR43-CLEAR-SLL", "name": "Clear Low SIT LLDPE Post industrial recycled 43%", "group": "PE", "density": 0.92}, {"code": "PIR40-MST-CLEAR-LL", "name": "PIR40-MST-CLEAR-LL", "group": "PE", "density": 0.925}, {"code": "PIR30-WHITE-LLP", "name": "White LLDPE printing Post industrial recycled 43%", "group": "PE", "density": 0.993}, {"code": "PIR30-CLEAR-LLP", "name": "Clear LLDPE printing Post industrial recycled 43% ", "group": "PE", "density": 0.926}, {"code": "BCT-CLEAR-PET", "name": "Clear PET Both corona treated", "group": "PET", "density": 1.4}, {"code": "SFT-ATS-MATT-PET", "name": "Matte PET Antiskid Soft touch", "group": "PET", "density": 1.357}, {"code": "BCT-CLEAR-PA", "name": "BCT-CLEAR-PA", "group": "PA", "density": 1.15}, {"code": "ECT03.2X-CLEAR-LL", "name": "Clear LLDPE ECT03.2X", "group": "PE", "density": 0.925}, {"code": "ECT07.3-WHITE-LL", "name": "White LLDPE ECT07.3", "group": "PE", "density": 0.95}, {"code": "ECT05-X-CLEAR-SLL", "name": "Clear Low SIT LLDPE ECT05-X", "group": "PE", "density": 0.925}, {"code": "ECT07.1-WHITE-LL", "name": "White LLDPE ECT07.1", "group": "PE", "density": 0.95}, {"code": "ECT3.2-CLEAR-LL", "name": "Clear LLDPE ECT3.2", "group": "PE", "density": 0.925}, {"code": "BAS-CLEAR-LL", "name": "Clear LLDPE Basic", "group": "PE", "density": 0.925}, {"code": "ECT03-X-CLEAR-LL", "name": "Clear LLDPE ECT03-X", "group": "PE", "density": 0.925}, {"code": "PCR70-CLEAR-LL", "name": "Clear LLDPE Post consumer recycled 70%", "group": "PE", "density": 0.925}, {"code": "MATT-PET", "name": "Matte PET", "group": "PET", "density": 1.4}, {"code": "HSL-METAL-BOPP", "name": "Metalized BOPP Heat-sealable", "group": "MOPP", "density": 0.91}, {"code": "HTR-VAC-WHITE-LL", "name": "White LLDPE Vaccum High tear resistance", "group": "PE", "density": 0.953}, {"code": "BCT-GEN-MATT-DLL", "name": "Matte MDOPE Both corona treated General", "group": "PE", "density": 0.94}, {"code": "BCT-CLEAR-OLL", "name": "BOPE both side corona treated", "group": "PE", "density": 0.94}, {"code": "PU-ALOX-PET", "name": "Aluminum oxide PET PU coating", "group": "ALOX-PET", "density": 1.4}, {"code": "ACR-ALOX-PET", "name": "Aluminum oxide PET Acrylic coating", "group": "ALOX-PET", "density": 1.4}, {"code": "PVA-ALOX-PET", "name": "Aluminum oxide PET PVA coating", "group": "ALOX-PET", "density": 1.4}, {"code": "AIR-METAL-CPP", "name": "Metalized CPP air blow application", "group": "MCPP", "density": 0.91}, {"code": "PIR36-CLEAR-SLL", "name": "Clear LLDPE low SIT PIR36", "group": "PE", "density": 0.925}, {"code": "HDI-VAC-CLEAR-LL", "name": "Clear LLDPE Vaccum High dart drop impact", "group": "PE", "density": 0.925}, {"code": "HOD-EZT-WHITE-SLL", "name": "White Low SIT LLDPE High OD Easy tear", "group": "PE", "density": 0.95}, {"code": "HDI-CLEAR-CPP", "name": "Clear CPP High dart drop impact", "group": "PP", "density": 0.91}, {"code": "CLEAR-PET_JIA", "name": "clear PET", "group": "PET", "density": 1.38}, {"code": "METAL-XPE", "name": "Metalized XPE", "group": "MBOPE", "density": 0.94}, {"code": "VAC-EC8-CLEAR-SLL", "name": "Clear Low SIT LLDPE Vaccum EC8", "group": "PE", "density": 0.925}, {"code": "VAC-EC8-CLEAR-LL", "name": "Clear LLDPE Vaccum EC8", "group": "PE", "density": 0.92}, {"code": "121-K-ALOX-PET", "name": "Aluminum oxide PET Non coating 121-K", "group": "ALOX-PET", "density": 1.4}, {"code": "PCR50-CLEAR-SLL", "name": "Clear LLDPE Low SIT Post consumer recycled 50%", "group": "PE", "density": 0.925}, {"code": "UHB-HSL-METAL-BOPP", "name": "metalized BOPP Ultra high barrier Heat-sealable", "group": "MOPP", "density": 0.91}, {"code": "HSL-MATT-BOPP", "name": "HSL-MATT-BOPP", "group": "PP", "density": 0.91}, {"code": "PU-ALOX-BOPP", "name": "Aluminum oxide BOPP PU coating", "group": "PP", "density": 0.91}, {"code": "LST-CLEAR-CPP", "name": "Clear CPP Low SIT", "group": "PP", "density": 0.91}], "LAM_PASS": {"Layer 1": {"L1": 1, "L1-L2": 2, "L2-L1": 1, "L1-L2-L3": 3, "L1-L3-L2": 2, "L2-L1-L3": 2, "L2-L3-L1": 1, "L3-L1-L2": 2, "L3-L2-L1": 1}, "Layer 3": {"L1": 1, "L1-L2": 2, "L2-L1": 2, "L1-L2-L3": 3, "L1-L3-L2": 2, "L2-L1-L3": 3, "L2-L3-L1": 3, "L3-L1-L2": 2, "L3-L2-L1": 2}, "Layer 5": {"L1": 0, "L1-L2": 1, "L2-L1": 2, "L1-L2-L3": 2, "L1-L3-L2": 2, "L2-L1-L3": 3, "L2-L3-L1": 3, "L3-L1-L2": 2, "L3-L2-L1": 3}, "Layer 7": {"L1": 0, "L1-L2": 0, "L2-L1": 0, "L1-L2-L3": 1, "L1-L3-L2": 2, "L2-L1-L3": 1, "L2-L3-L1": 2, "L3-L1-L2": 2, "L3-L2-L1": 3}}, "LAM_MACHINES": [{"name": "Comexi", "dia_out_max": 950, "dia_in_max": 950, "wt_out_max": 1000, "wt_in_max": 1000}, {"name": "Sinomech", "dia_out_max": 790, "dia_in_max": 950, "wt_out_max": 400, "wt_in_max": 400}, {"name": "Mới 1", "dia_out_max": null, "dia_in_max": null, "wt_out_max": null, "wt_in_max": null}, {"name": "Mới 2", "dia_out_max": null, "dia_in_max": null, "wt_out_max": null, "wt_in_max": null}], "SLIT_MACHINES": [{"name": "Yoden 600", "dia_out_max": 950, "dia_in_max": 790, "wt_out_max": "N/A", "wt_in_max": 400}, {"name": "Mới 1", "dia_out_max": null, "dia_in_max": null, "wt_out_max": null, "wt_in_max": null}, {"name": "Mới 2", "dia_out_max": null, "dia_in_max": null, "wt_out_max": null, "wt_in_max": null}], "PRINT_MACHINES": [{"name": "Máy 8", "dia_max": 790, "wt_max": 300}, {"name": "Máy 9", "dia_max": 790, "wt_max": 300}, {"name": "Máy 10A/B", "dia_max": 790, "wt_max": 300}, {"name": "Máy 10C", "dia_max": 790, "wt_max": 600}], "BAGMAKING_GROUPS": [{"machine": "BM01", "group": "Nhóm khác", "type": "ALL", "all": "Yes", "dia_adj": 790}, {"machine": "BM02", "group": "FA", "type": "BTP", "all": "No", "dia_adj": 790}, {"machine": "BM03", "group": "GU", "type": "BTP", "all": "No", "dia_adj": 690}, {"machine": "BM04", "group": "BOT", "type": "BTP", "all": "No", "dia_adj": 590}, {"machine": "BM05", "group": "3 biên", "type": "FG", "all": "No", "dia_adj": 950}, {"machine": "BM06", "group": "Cắt trên BM11", "type": "BM", "all": "No", "dia_adj": 950}], "SPLICE3": [["PP", "MOPP", "PP", "L1-L2"], ["PP", "MOPP", "PE", "L1-L2"], ["PP", "PP", "PP", "L1-L2"], ["PP", "PP", "PE", "L1-L2"], ["PP", "PET", "PP", "L1-L2"], ["PP", "MPET", "PP", "L1-L2"], ["PP", "ALOX-PET", "PP", "L1-L2"], ["PP", "PET", "PE", "L1-L2"], ["PP", "MPET", "PE", "L1-L2"], ["PP", "ALOX-PET", "PE", "L1-L2"], ["PET", "MPET", "PP", "L1-L2"], ["PET", "MPET", "PE", "L1-L2"], ["PET", "ALOX-PET", "PP", "L1-L2"], ["PET", "ALOX-PET", "PE", "L1-L2"], ["ALOX-PET", "PET", "PP", "L1-L2"], ["PET", "PET", "PP", "L1-L2"], ["PA", "PET", "PP", "L1-L2"], ["ALOX-PET", "PET", "PE", "L1-L2"], ["PET", "PET", "PE", "L1-L2"], ["PA", "PET", "PE", "L1-L2"], ["ALOX-PET", "PA", "PP", "L2-L1"], ["PET", "PA", "PP", "L2-L1"], ["PA", "PA", "PP", "L2-L1"], ["ALOX-PET", "PA", "PE", "L2-L1"], ["PET", "PA", "PE", "L2-L1"], ["PA", "PA", "PE", "L2-L1"], ["PET", "AL", "PP", "L2-L1"], ["PP", "AL", "PP", "L2-L1"], ["PET", "AL", "PE", "L2-L1"], ["PP", "AL", "PE", "L2-L1"], ["PE", "PE", "PE", "L2-L1"]], "SPLICE4": [["PET", "AL", "PA", "PE", "L3-L2-L1"], ["PET", "MPET", "PA", "PE", "L1-L3-L2"], ["PP", "PET", "AL", "PP", "L1-L2-L3"], ["PP", "MPET", "PA", "PE", "L1-L3-L2"], ["PP", "PET", "PET", "PP", "L1-L2-L3"]], "LAM_WASTE": [{"code": "R.AS", "type": "Dạng cuộn ghép", "trait": null, "setup02": 150, "setupgt2": 150, "cuon1": 1.5, "cuon2": 2.5, "cuon3": 3.5, "tui1": null, "tui2": null, "tui3": null}, {"code": "B.3S", "type": "Túi 3 biên", "trait": "Nhóm khác", "setup02": 500, "setupgt2": 450, "cuon1": 1.0, "cuon2": 2.0, "cuon3": 3.0, "tui1": 2.5, "tui2": 3.5, "tui3": 4.5}, {"code": "B.3S", "type": "Túi 3 biên", "trait": "Nhóm đựng sản phẩm gạo", "setup02": 500, "setupgt2": 450, "cuon1": 1.0, "cuon2": 2.0, "cuon3": 3.0, "tui1": 3.5, "tui2": 4.5, "tui3": 5.5}, {"code": "B.3S.ZP", "type": "Túi 3 biên Zipper", "trait": null, "setup02": 500, "setupgt2": 450, "cuon1": 1.25, "cuon2": 2.25, "cuon3": 3.25, "tui1": 2.75, "tui2": 3.75, "tui3": 4.75}, {"code": "B.CS", "type": "Túi cut-seal", "trait": "Có băng keo phá huỷ hoặc zipper slider", "setup02": 500, "setupgt2": 450, "cuon1": 1.0, "cuon2": 2.0, "cuon3": 3.0, "tui1": 5.0, "tui2": 6.0, "tui3": 7.0}, {"code": "B.CS", "type": "Túi cut-seal", "trait": "Nhóm khác", "setup02": 500, "setupgt2": 450, "cuon1": 1.0, "cuon2": 2.0, "cuon3": 3.0, "tui1": 2.82, "tui2": 3.82, "tui3": 4.82}, {"code": "B.CS.ZP", "type": "Túi cut-seal Zipper", "trait": null, "setup02": 500, "setupgt2": 450, "cuon1": 1.0, "cuon2": 2.0, "cuon3": 3.0, "tui1": 2.0, "tui2": 3.0, "tui3": 4.0}, {"code": "B.SU.CS", "type": "Túi cut-seal đáy đứng", "trait": null, "setup02": 500, "setupgt2": 450, "cuon1": 1.0, "cuon2": 2.0, "cuon3": 3.0, "tui1": 2.0, "tui2": 3.0, "tui3": 4.0}, {"code": "B.SU", "type": "Túi đáy đứng", "trait": "Nhóm OPP//CPP không in, PET/CPP", "setup02": 500, "setupgt2": 450, "cuon1": 1.25, "cuon2": 2.25, "cuon3": 3.25, "tui1": 2.5, "tui2": 3.5, "tui3": 4.5}, {"code": "B.SU", "type": "Túi đáy đứng", "trait": "Túi bế", "setup02": 500, "setupgt2": 450, "cuon1": 1.25, "cuon2": 2.25, "cuon3": 3.25, "tui1": 5.0, "tui2": 6.0, "tui3": 7.0}, {"code": "B.SU", "type": "Túi đáy đứng", "trait": "Nhóm khác", "setup02": 500, "setupgt2": 450, "cuon1": 1.25, "cuon2": 2.25, "cuon3": 3.25, "tui1": 6.0, "tui2": 7.0, "tui3": 8.0}, {"code": "B.SU", "type": "Túi đáy đứng", "trait": "Nhóm OPP//CPP có in", "setup02": 500, "setupgt2": 450, "cuon1": 1.25, "cuon2": 2.25, "cuon3": 3.25, "tui1": 5.0, "tui2": 6.0, "tui3": 7.0}, {"code": "B.SU.ZP", "type": "Túi đáy đứng Zipper", "trait": "Nhóm CPP/OPP, PET/CPP", "setup02": 500, "setupgt2": 450, "cuon1": 1.25, "cuon2": 2.25, "cuon3": 3.25, "tui1": 2.5, "tui2": 3.5, "tui3": 4.5}, {"code": "B.SU.ZP", "type": "Túi đáy đứng Zipper", "trait": "Túi bế", "setup02": 500, "setupgt2": 450, "cuon1": 1.25, "cuon2": 2.25, "cuon3": 3.25, "tui1": 5.0, "tui2": 6.0, "tui3": 7.0}, {"code": "B.SU.ZP", "type": "Túi đáy đứng Zipper", "trait": "Nhóm khác", "setup02": 500, "setupgt2": 450, "cuon1": 1.25, "cuon2": 2.25, "cuon3": 3.25, "tui1": 6.0, "tui2": 7.0, "tui3": 8.0}, {"code": "B.SU.ZP", "type": "Túi đáy đứng Zipper", "trait": "Nhóm OPP//CPP có in", "setup02": 500, "setupgt2": 450, "cuon1": 1.25, "cuon2": 2.25, "cuon3": 3.25, "tui1": 5.0, "tui2": 6.0, "tui3": 7.0}, {"code": "B.1S.SG", "type": "Túi 1 biên có xếp hông", "trait": null, "setup02": 500, "setupgt2": 450, "cuon1": 1.0, "cuon2": 2.0, "cuon3": 3.0, "tui1": 5.0, "tui2": 6.0, "tui3": 7.0}, {"code": "B.LS", "type": "Túi hàn lưng giữa", "trait": null, "setup02": 500, "setupgt2": 450, "cuon1": 1.0, "cuon2": 2.0, "cuon3": 3.0, "tui1": 3.92, "tui2": 4.92, "tui3": 5.92}, {"code": "B.LS.1S", "type": "Túi hàn lưng lệch", "trait": null, "setup02": 500, "setupgt2": 450, "cuon1": 1.0, "cuon2": 2.0, "cuon3": 3.0, "tui1": 3.92, "tui2": 4.92, "tui3": 5.92}, {"code": "B.LS.SG", "type": "Túi hàn lưng giữa có xếp hông", "trait": null, "setup02": 500, "setupgt2": 450, "cuon1": 1.0, "cuon2": 2.0, "cuon3": 3.0, "tui1": 5.0, "tui2": 6.0, "tui3": 7.0}, {"code": "B.LS.1S.SG", "type": "Túi hàn lưng lệch có xếp hông", "trait": null, "setup02": 500, "setupgt2": 450, "cuon1": 1.0, "cuon2": 2.0, "cuon3": 3.0, "tui1": 5.0, "tui2": 6.0, "tui3": 7.0}, {"code": "B.4S", "type": "Túi 4 biên", "trait": "Nhóm đựng sản phẩm gạo", "setup02": 500, "setupgt2": 450, "cuon1": 1.0, "cuon2": 2.0, "cuon3": 3.0, "tui1": 4.0, "tui2": 5.0, "tui3": 6.0}, {"code": "B.4S", "type": "Túi 4 biên", "trait": "Nhóm có MPET, mono PE, mono PP", "setup02": 500, "setupgt2": 450, "cuon1": 1.5, "cuon2": 2.5, "cuon3": 3.5, "tui1": 6.5, "tui2": 7.5, "tui3": 8.5}, {"code": "B.4S", "type": "Túi 4 biên", "trait": "Nhóm khác", "setup02": 500, "setupgt2": 450, "cuon1": 1.0, "cuon2": 2.0, "cuon3": 3.0, "tui1": 5.0, "tui2": 6.0, "tui3": 7.0}, {"code": "B.4S.FB", "type": "Túi 4 biên có gấp đáy", "trait": "Nhóm có MPET, mono PE, mono PP", "setup02": 500, "setupgt2": 450, "cuon1": 1.5, "cuon2": 2.5, "cuon3": 3.5, "tui1": 6.5, "tui2": 7.5, "tui3": 8.5}, {"code": "B.4S.FB", "type": "Túi 4 biên có gấp đáy", "trait": "Nhóm khác", "setup02": 500, "setupgt2": 450, "cuon1": 1.0, "cuon2": 2.0, "cuon3": 3.0, "tui1": 5.0, "tui2": 6.0, "tui3": 7.0}, {"code": "B.4S.FZ", "type": "Túi 4 biên Zipper gấp đáy", "trait": "Nhóm khác (mặc định, chưa có dữ liệu riêng)", "setup02": 500, "setupgt2": 450, "cuon1": 1.0, "cuon2": 2.0, "cuon3": 3.0, "tui1": 5.0, "tui2": 6.0, "tui3": 7.0}, {"code": "B.FL", "type": "Túi 4 biên đáy vuông", "trait": "Nhóm mono PE", "setup02": 500, "setupgt2": 600, "cuon1": 1.0, "cuon2": 2.0, "cuon3": 3.0, "tui1": 6.0, "tui2": 7.0, "tui3": 8.0}, {"code": "B.FL", "type": "Túi 4 biên đáy vuông", "trait": "Nhóm khác", "setup02": 500, "setupgt2": 450, "cuon1": 1.0, "cuon2": 2.0, "cuon3": 3.0, "tui1": 6.0, "tui2": 7.0, "tui3": 8.0}, {"code": "B.FL.ZP", "type": "Túi 4 biên đáy vuông Zipper", "trait": "Nhóm khác", "setup02": 500, "setupgt2": 450, "cuon1": 1.0, "cuon2": 2.0, "cuon3": 3.0, "tui1": 6.0, "tui2": 7.0, "tui3": 8.0}, {"code": "B.FL.ZP", "type": "Túi 4 biên đáy vuông Zipper", "trait": "Nhóm mono PE", "setup02": 500, "setupgt2": 600, "cuon1": 1.0, "cuon2": 2.0, "cuon3": 3.0, "tui1": 6.0, "tui2": 7.0, "tui3": 8.0}, {"code": "B.4S.ZP", "type": "Túi 4 biên Zipper", "trait": "Nhóm có PET, có BOPP", "setup02": 500, "setupgt2": 450, "cuon1": 1.0, "cuon2": 2.0, "cuon3": 3.0, "tui1": 6.0, "tui2": 7.0, "tui3": 8.0}, {"code": "B.4S.ZP", "type": "Túi 4 biên Zipper", "trait": "Nhóm PE", "setup02": 500, "setupgt2": 600, "cuon1": 1.0, "cuon2": 2.0, "cuon3": 3.0, "tui1": 6.0, "tui2": 7.0, "tui3": 8.0}, {"code": "B.4S.TG", "type": "Túi 4 biên Terminated gusset", "trait": null, "setup02": 700, "setupgt2": 700, "cuon1": 1.0, "cuon2": 2.0, "cuon3": 3.0, "tui1": 10.0, "tui2": 11.0, "tui3": 12.0}, {"code": "B.4S.TZ", "type": "Túi 4 biên Zipper Terminated gusset", "trait": null, "setup02": 700, "setupgt2": 700, "cuon1": 1.0, "cuon2": 2.0, "cuon3": 3.0, "tui1": 10.0, "tui2": 11.0, "tui3": 12.0}, {"code": "B.4S.FTZ", "type": "Túi 4 biên Zipper gấp đáy Terminated gusset", "trait": null, "setup02": 700, "setupgt2": 700, "cuon1": 1.0, "cuon2": 2.0, "cuon3": 3.0, "tui1": 10.0, "tui2": 11.0, "tui3": 12.0}, {"code": "B.4S.FT", "type": "Túi 4 biên gấp đáy Terminated gusset", "trait": null, "setup02": 700, "setupgt2": 700, "cuon1": 1.0, "cuon2": 2.0, "cuon3": 3.0, "tui1": 10.0, "tui2": 11.0, "tui3": 12.0}], "PRINT_WASTE_SETUP": {"waste_pct": 2.5, "setup_by_color": {"0": 0, "1": 500, "2": 500, "3": 600, "4": 900, "5": 1000, "6": 1100, "7": 1200, "8": 1300, "9": 1400, "10": 1500, "11": 1600}}, "RUBBER_STOCK": [{"machine": "Sinomech", "width": 510, "qty": 1}, {"machine": "Sinomech", "width": 550, "qty": 1}, {"machine": "Sinomech", "width": 560, "qty": 1}, {"machine": "Sinomech", "width": 590, "qty": 1}, {"machine": "Sinomech", "width": 600, "qty": 1}, {"machine": "Sinomech", "width": 610, "qty": 1}, {"machine": "Sinomech", "width": 620, "qty": 1}, {"machine": "Sinomech", "width": 630, "qty": 1}, {"machine": "Sinomech", "width": 640, "qty": 1}, {"machine": "Sinomech", "width": 650, "qty": 1}, {"machine": "Sinomech", "width": 660, "qty": 1}, {"machine": "Sinomech", "width": 670, "qty": 1}, {"machine": "Sinomech", "width": 680, "qty": 1}, {"machine": "Sinomech", "width": 690, "qty": 1}, {"machine": "Sinomech", "width": 700, "qty": 1}, {"machine": "Sinomech", "width": 710, "qty": 1}, {"machine": "Sinomech", "width": 730, "qty": 1}, {"machine": "Sinomech", "width": 740, "qty": 1}, {"machine": "Sinomech", "width": 760, "qty": 1}, {"machine": "Sinomech", "width": 770, "qty": 1}, {"machine": "Sinomech", "width": 780, "qty": 1}, {"machine": "Sinomech", "width": 790, "qty": 1}, {"machine": "Sinomech", "width": 800, "qty": 1}, {"machine": "Sinomech", "width": 810, "qty": 1}, {"machine": "Sinomech", "width": 830, "qty": 1}, {"machine": "Sinomech", "width": 840, "qty": 1}, {"machine": "Sinomech", "width": 860, "qty": 1}, {"machine": "Sinomech", "width": 870, "qty": 1}, {"machine": "Sinomech", "width": 890, "qty": 1}, {"machine": "Sinomech", "width": 910, "qty": 1}, {"machine": "Sinomech", "width": 930, "qty": 1}, {"machine": "Sinomech", "width": 940, "qty": 1}, {"machine": "Sinomech", "width": 960, "qty": 1}, {"machine": "Sinomech", "width": 980, "qty": 1}, {"machine": "Sinomech", "width": 990, "qty": 1}, {"machine": "Sinomech", "width": 1010, "qty": 1}, {"machine": "Sinomech", "width": 1030, "qty": 1}, {"machine": "Sinomech", "width": 1050, "qty": 1}, {"machine": "Sinomech", "width": 1060, "qty": 1}, {"machine": "Sinomech", "width": 1080, "qty": 1}, {"machine": "Sinomech", "width": 1090, "qty": 1}, {"machine": "Sinomech", "width": 1100, "qty": 1}, {"machine": "Sinomech", "width": 1110, "qty": 1}, {"machine": "Sinomech", "width": 1130, "qty": 1}, {"machine": "Sinomech", "width": 1150, "qty": 1}, {"machine": "Sinomech", "width": 1155, "qty": 1}, {"machine": "Sinomech", "width": 1160, "qty": 1}, {"machine": "Sinomech", "width": 1165, "qty": 1}, {"machine": "Sinomech", "width": 1190, "qty": 1}, {"machine": "Sinomech", "width": 1210, "qty": 1}, {"machine": "Sinomech", "width": 1230, "qty": 1}, {"machine": "Sinomech", "width": 1240, "qty": 1}, {"machine": "Comexi", "width": 520, "qty": 1}, {"machine": "Comexi", "width": 590, "qty": 1}, {"machine": "Comexi", "width": 610, "qty": 1}, {"machine": "Comexi", "width": 630, "qty": 1}, {"machine": "Comexi", "width": 650, "qty": 1}, {"machine": "Comexi", "width": 670, "qty": 1}, {"machine": "Comexi", "width": 690, "qty": 1}, {"machine": "Comexi", "width": 710, "qty": 1}, {"machine": "Comexi", "width": 730, "qty": 1}, {"machine": "Comexi", "width": 750, "qty": 1}, {"machine": "Comexi", "width": 760, "qty": 1}, {"machine": "Comexi", "width": 770, "qty": 1}, {"machine": "Comexi", "width": 800, "qty": 1}, {"machine": "Comexi", "width": 810, "qty": 1}, {"machine": "Comexi", "width": 820, "qty": 1}, {"machine": "Comexi", "width": 830, "qty": 1}, {"machine": "Comexi", "width": 850, "qty": 1}, {"machine": "Comexi", "width": 860, "qty": 1}, {"machine": "Comexi", "width": 870, "qty": 1}, {"machine": "Comexi", "width": 890, "qty": 1}, {"machine": "Comexi", "width": 910, "qty": 1}, {"machine": "Comexi", "width": 930, "qty": 1}, {"machine": "Comexi", "width": 940, "qty": 1}, {"machine": "Comexi", "width": 950, "qty": 1}, {"machine": "Comexi", "width": 970, "qty": 1}, {"machine": "Comexi", "width": 980, "qty": 1}, {"machine": "Comexi", "width": 1010, "qty": 1}, {"machine": "Comexi", "width": 1030, "qty": 1}, {"machine": "Comexi", "width": 1040, "qty": 1}, {"machine": "Comexi", "width": 1060, "qty": 1}, {"machine": "Comexi", "width": 1100, "qty": 1}, {"machine": "Comexi", "width": 1110, "qty": 1}, {"machine": "Comexi", "width": 1130, "qty": 1}, {"machine": "Comexi", "width": 1140, "qty": 1}, {"machine": "Comexi", "width": 1165, "qty": 1}, {"machine": "Comexi", "width": 1180, "qty": 1}, {"machine": "Comexi", "width": 1280, "qty": 1}]}</script>
+<script>
+const LOGO_B64 = "/9j/4AAQSkZJRgABAQEASABIAAD/2wBDAAMCAgMCAgMDAwMEAwMEBQgFBQQEBQoHBwYIDAoMDAsKCwsNDhIQDQ4RDgsLEBYQERMUFRUVDA8XGBYUGBIUFRT/2wBDAQMEBAUEBQkFBQkUDQsNFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBT/wAARCADbA2EDASIAAhEBAxEB/8QAHwAAAQUBAQEBAQEAAAAAAAAAAAECAwQFBgcICQoL/8QAtRAAAgEDAwIEAwUFBAQAAAF9AQIDAAQRBRIhMUEGE1FhByJxFDKBkaEII0KxwRVS0fAkM2JyggkKFhcYGRolJicoKSo0NTY3ODk6Q0RFRkdISUpTVFVWV1hZWmNkZWZnaGlqc3R1dnd4eXqDhIWGh4iJipKTlJWWl5iZmqKjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uHi4+Tl5ufo6erx8vP09fb3+Pn6/8QAHwEAAwEBAQEBAQEBAQAAAAAAAAECAwQFBgcICQoL/8QAtREAAgECBAQDBAcFBAQAAQJ3AAECAxEEBSExBhJBUQdhcRMiMoEIFEKRobHBCSMzUvAVYnLRChYkNOEl8RcYGRomJygpKjU2Nzg5OkNERUZHSElKU1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6goOEhYaHiImKkpOUlZaXmJmaoqOkpaanqKmqsrO0tba3uLm6wsPExcbHyMnK0tPU1dbX2Nna4uPk5ebn6Onq8vP09fb3+Pn6/9oADAMBAAIRAxEAPwD9U6KKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACkzS1V1HULbS7K4vLyeO1tLeJppp5mCpGiglmYnoAASaN9gLO4UZr4E+I3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ZyVUN3Kn+Fux+nSvqP4e/CfTPhr9tGl3l9Ml3t3x3UiMoK5wRtQc81X8XfAzwl4yuWuruxa1vGOWuLJvKZvqMYJ9yK5KvDuYP2eOw9RQxCVpa6O2l726pK6at+vXS4gy9OpgsRTc8O3eOmqvra3k3o072/DyDxB+1ZqF5YPDpOjw2Fwwx9onm87Z7hQBn8a87+H3gXU/ip4r8stNJbmTzb++k5KgnLc92PPH8q+gbD9lvwfZzK80upXyKf8AVTXAVCPQ7FB/WvT9D8O6f4bsEsdMs4bG0T7sUCbR9T6minw9meZ14VM4qpwj9ldfuSS83uE8+yzLaM6eT0mpy6vp97bfkti1Z20VjawWsEYjhhQRxovRVAwB+VfHP7RH/JW9aOR92DuP+eK19mFT615j4y/Z90Lxx4iutZvr7UYbq4Chlt5ECDaoUYyhPQetfQcS5ZiMzwUaGFSupJ720Sa/U8DhvMqGW4yVfEt2cWtr6tp/odZ8Nvm+Hvhr/sHW/wD6LWvIv2lfhbc6o0finSoWnlhi8q9hjXLFB92QDvgZB9sele56DpEXh/RbHTYGZ4LOFIEaQ5YqoAGffAq48e89q9PFZXTzDL1gq+mi17NLf+uh52FzOpgMe8ZQ11endN7f11PjH4Z/G/WPhzb/AGNI49T0osWW1kbDRknkowBxn0II57V1fi39qTVdWsXttH0xNHkkGDcyS+bIvunACn35r17xV8AfCHiy6kupbKSwupDueWwk8vce5K4K5/CsnSv2X/B2nzrLOb/UAp/1dxOAh+oRVP618NDJ+JMND6pQrr2fR36fdzL5P0Ptp5tw7ian1uvQftOqtu/vUX816nhHwf8Ahrd/ETxPFJMkn9kW0okvLl+j858sHuW7+xzX2nGoVQqjCrwAKqaZpNpotjFZ2FtDZ2sQwkMKBFUewFXK+yyPJqeTUHBPmnLWT/T0R8hnWcVM4rqbXLCOkV+vqxaKKK+kPngooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigD/2Q==";
+let DATA = JSON.parse(document.getElementById('data-blob').textContent);
+
+/* ===================== Nạp dữ liệu trực tuyến từ Excel ===================== */
+/* "data.xlsx" = file Excel được đồng bộ tự động từ OneDrive về CÙNG repo GitHub Pages
+   với trang này (qua GitHub Actions) — nhờ vậy trình duyệt đọc cùng domain, không bị
+   OneDrive/SharePoint chặn CORS. Xem hướng dẫn thiết lập ở phần "Hướng dẫn triển khai"
+   đi kèm. Để trống ("") thì trang sẽ luôn dùng bản dữ liệu offline nhúng sẵn (data-blob). */
+const EXCEL_DATA_URL = "data.xlsx";
+
+const EXCEL_SHEETS = {
+  MATERIALS:        { sheet: "Code màng",          cols: ["code","name","group","density"] },
+  PRINT_MACHINES:    { sheet: "Máy in",              cols: ["name","dia_max","wt_max"] },
+  LAM_MACHINES:       { sheet: "Máy ghép",            cols: ["name","dia_out_max","dia_in_max","wt_out_max","wt_in_max"] },
+  SLIT_MACHINES:      { sheet: "Máy chia",            cols: ["name","dia_out_max","dia_in_max","wt_out_max","wt_in_max"] },
+  RUBBER_STOCK:        { sheet: "Bánh thun",           cols: ["machine","width","qty"] },
+  LAM_WASTE:            { sheet: "Tỷ lệ phế - Setup",   cols: ["code","type","trait","setup02","setupgt2","cuon1","cuon2","cuon3","tui1","tui2","tui3"] },
+  BAGMAKING_GROUPS:      { sheet: "Nhóm máy làm túi",     cols: ["machine","group","type","all","dia_adj"] },
+};
+const EXCEL_SPLICE3_SHEET = "Thứ tự ghép 3 lớp";
+const EXCEL_SPLICE4_SHEET = "Thứ tự ghép 4 lớp";
+const EXCEL_LAM_PASS_SHEET = "Số lần ghép";
+const EXCEL_PRINT_WASTE_SHEET = "Setup in theo màu";
+
+function _normSheetName(s){ return String(s).trim().toLowerCase().replace(/\s+/g,' '); }
+function _strOr(v){ if(v===null||v===undefined) return null; const s=String(v).trim(); return s===''?null:s; }
+function _numOrText(v){
+  if(v===null||v===undefined||v==='') return null;
+  if(typeof v==='number') return v;
+  const s=String(v).trim();
+  const norm=s.replace(',', '.').replace(';', '.');
+  const n=parseFloat(norm);
+  if(!isNaN(n) && /^-?\d+([.,;]\d+)?$/.test(s)) return n;
+  return s;
+}
+
+function _parsePrintWasteSetup(rows){
+  let waste_pct=null; const setup_by_color={};
+  rows.forEach(row=>{
+    if(!row || row.length===0) return;
+    const c0=row[0];
+    if(typeof c0==='string' && /ph[eế]/i.test(c0)){
+      waste_pct=_numOrText(row[1]);
+      if(typeof waste_pct!=='number') waste_pct=null;
+    } else if(typeof c0==='number'){
+      const v=_numOrText(row[1]);
+      setup_by_color[c0]= typeof v==='number'? v : 0;
+    }
+  });
+  return { waste_pct, setup_by_color };
+}
+
+async function _fetchWorkbook(url){
+  const bust = url + (url.includes('?') ? '&' : '?') + '_ts=' + Date.now();
+  const resp = await fetch(bust, { cache: 'no-store' });
+  if(!resp.ok) throw new Error('HTTP ' + resp.status + ' khi tải file Excel');
+  const buf = await resp.arrayBuffer();
+  return XLSX.read(buf, { type: 'array' });
+}
+
+function _buildDataFromWorkbook(wb){
+  const sheetIndex = {};
+  wb.SheetNames.forEach(n => { sheetIndex[_normSheetName(n)] = n; });
+  function rawRowsOf(label){
+    const actual = sheetIndex[_normSheetName(label)];
+    if(!actual) throw new Error('Không tìm thấy sheet "' + label + '" trong file Excel.');
+    const ws = wb.Sheets[actual];
+    return XLSX.utils.sheet_to_json(ws, { header:1, defval:null, raw:true })
+      .filter(r => r && r.some(c => c!==null && c!==''));
+  }
+  function rowsOf(label){ return rawRowsOf(label).slice(1); }
+
+  const out = {};
+  Object.keys(EXCEL_SHEETS).forEach(key=>{
+    const def = EXCEL_SHEETS[key];
+    out[key] = rowsOf(def.sheet).map(r=>{
+      const obj={};
+      def.cols.forEach((field,i)=>{
+        obj[field] = (field==='code'||field==='name'||field==='group'||field==='machine'||field==='type'||field==='trait'||field==='all')
+          ? _strOr(r[i]) : _numOrText(r[i]);
+      });
+      return obj;
+    });
+  });
+
+  out.SPLICE3 = rowsOf(EXCEL_SPLICE3_SHEET).map(r=>[_strOr(r[0]),_strOr(r[1]),_strOr(r[2]),_strOr(r[3])]);
+  out.SPLICE4 = rowsOf(EXCEL_SPLICE4_SHEET).map(r=>[_strOr(r[0]),_strOr(r[1]),_strOr(r[2]),_strOr(r[3]),_strOr(r[4])]);
+
+  const LAM_PASS = {};
+  rowsOf(EXCEL_LAM_PASS_SHEET).forEach(r=>{
+    const layer=_strOr(r[0]), order=_strOr(r[1]), count=Number(r[2]);
+    if(layer==null || order==null) return;
+    if(!LAM_PASS[layer]) LAM_PASS[layer]={};
+    LAM_PASS[layer][order] = isNaN(count)?0:count;
+  });
+  out.LAM_PASS = LAM_PASS;
+
+  out.PRINT_WASTE_SETUP = _parsePrintWasteSetup(rawRowsOf(EXCEL_PRINT_WASTE_SHEET));
+
+  const required = ['MATERIALS','PRINT_MACHINES','LAM_MACHINES','SLIT_MACHINES','RUBBER_STOCK','LAM_WASTE','BAGMAKING_GROUPS','SPLICE3','SPLICE4','LAM_PASS','PRINT_WASTE_SETUP'];
+  required.forEach(k=>{
+    const v=out[k];
+    const empty = Array.isArray(v) ? v.length===0 : (v && typeof v==='object' ? Object.keys(v).length===0 : !v);
+    if(empty) throw new Error('Dữ liệu "' + k + '" đọc được từ Excel bị trống — kiểm tra lại sheet nguồn.');
+  });
+  return out;
+}
+
+function _showDataBanner(kind, text){
+  const el = document.getElementById('dataSyncBanner');
+  if(!el) return;
+  const styles = {
+    ok:   'background:var(--good-soft,#e8f7ee);color:var(--good,#1c7a4d);border-bottom:1px solid var(--good,#1c7a4d)',
+    warn: 'background:var(--warn-soft,#fff6e0);color:var(--warn,#a06a00);border-bottom:1px solid var(--warn,#a06a00)',
+    bad:  'background:var(--bad-soft,#fdecea);color:var(--bad,#c0392b);border-bottom:1px solid var(--bad,#c0392b)'
+  };
+  el.style.cssText += ';' + (styles[kind]||styles.warn);
+  el.textContent = text;
+  el.style.display = 'block';
+  if(kind==='ok'){ setTimeout(()=>{ el.style.display='none'; }, 4000); }
+}
+
+async function ensureDataLoaded(){
+  if(!EXCEL_DATA_URL){
+    return; // chưa cấu hình link Excel -> dùng dữ liệu offline nhúng sẵn, không báo lỗi
+  }
+  try{
+    const wb = await _fetchWorkbook(EXCEL_DATA_URL);
+    const fresh = _buildDataFromWorkbook(wb);
+    DATA = fresh;
+    _showDataBanner('ok', '✅ Đã cập nhật dữ liệu mới nhất từ Excel lúc ' + new Date().toLocaleString('vi-VN'));
+  }catch(err){
+    console.warn('[Excel online] Không tải được dữ liệu mới, dùng dữ liệu offline nhúng sẵn trong trang:', err);
+    _showDataBanner('warn', '⚠️ Không tải được dữ liệu mới nhất từ Excel (đang dùng dữ liệu offline nhúng sẵn trong trang). Chi tiết lỗi xem ở Console (F12).');
+  }
+}
+</script>
+<script>
+"use strict";
+(async function(){
+  await ensureDataLoaded();
+/* ===================== Helpers ===================== */
+function fmt2(n){ if(n===null||n===undefined||n===''||isNaN(n)) return '—'; return Number(n).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+function fmt0(n){ if(n===null||n===undefined||n===''||isNaN(n)) return '—'; return Math.round(Number(n)).toLocaleString('en-US',{maximumFractionDigits:0}); }
+function numOr(v,d){ const n=parseFloat(v); return isNaN(n)? (d===undefined?null:d) : n; }
+function overrideVal(raw, fallback){ if(raw==null||raw==='') return fallback; const n=parseFloat(raw); return isNaN(n)? fallback : n; }
+function ceil10(v){ return Math.ceil(v/10)*10; }
+function el(html){ const d=document.createElement('div'); d.innerHTML=html.trim(); return d.firstElementChild; }
+function esc(s){ return (s==null?'':String(s)).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+function roundToTens(v){ // round-to-nearest-10 with <5 down / >=5 up rule, generic
+  let last = ((Math.round(v)%10)+10)%10;
+  return last<5 ? Math.round(v)-last : Math.round(v)-last+10;
+}
+function roundBandThun(pti, terminated){
+  if(pti==null||isNaN(pti)) return null;
+  const v = terminated? pti : pti+10;
+  return roundToTens(v);
+}
+function roundK1({pti, terminated, phuMo, bandThun}){
+  if(pti==null||isNaN(pti)) return null;
+  if(phuMo || terminated){
+    const v = pti+20;
+    const last = Math.round(v)%10;
+    let base;
+    if(last===0) base = v; // already a clean round-ten value, no padding needed
+    else if(last<6) base = Math.round(v)-last+5;
+    else base = Math.ceil(v/10)*10;
+    const k2 = bandThun+10;
+    return Math.max(base,k2);
+  }
+  return bandThun+10;
+}
+
+/* ===================== Master data derived ===================== */
+const BAG_TYPES = [
+ {code:'B.3S', name:'Túi 3 biên', tp:['FG'], dir:true},
+ {code:'B.3S.ZP', name:'Túi 3 biên Zipper', tp:['FG']},
+ {code:'B.SU', name:'Túi đáy đứng', tp:['FG']},
+ {code:'B.SU.ZP', name:'Túi đứng Zipper', tp:['FG']},
+ {code:'B.CS', name:'Túi cut-seal', tp:['FG'], dir:true},
+ {code:'B.CS.ZP', name:'Túi cut-seal Zipper', tp:['FG']},
+ {code:'B.SU.CS', name:'Túi cut-seal đáy đứng', tp:['FG']},
+ {code:'B.4S', name:'Túi 4 biên', tp:['FG']},
+ {code:'B.4S.ZP', name:'Túi 4 biên Zipper', tp:['FG','FA','GU']},
+ {code:'B.4S.FB', name:'Túi 4 biên có gấp đáy', tp:['FG']},
+ {code:'B.4S.FZ', name:'Túi 4 biên Zipper gấp đáy', tp:['FG','FA','GU']},
+ {code:'B.4S.TG', name:'Túi 4 biên Terminated gusset', tp:['FG']},
+ {code:'B.4S.TZ', name:'Túi 4 biên Zipper Terminated gusset', tp:['FG']},
+ {code:'B.4S.FT', name:'Túi 4 biên gấp đáy Terminated gusset', tp:['FG']},
+ {code:'B.4S.FTZ', name:'Túi 4 biên Zipper gấp đáy Terminated gusset', tp:['FG']},
+ {code:'B.FL', name:'Túi 4 biên đáy vuông', tp:['FA','FA-F','FA-B','FABO','GU','BOT']},
+ {code:'B.FL.ZP', name:'Túi 4 biên đáy vuông Zipper', tp:['FA','FA-F','FA-B','FABO','GU','BOT']},
+ {code:'B.LS', name:'Túi hàn lưng giữa', tp:['FG']},
+ {code:'B.LS.1S', name:'Túi hàn lưng lệch', tp:['FG']},
+ {code:'B.LS.1S.SG', name:'Túi hàn lưng lệch có xếp hông', tp:['FG']},
+ {code:'B.LS.SG', name:'Túi hàn lưng giữa có xếp hông', tp:['FG']},
+ {code:'B.1S.SG', name:'Túi 1 biên có xếp hông', tp:['FG']},
+];
+const TERMINATED = ['B.4S.TG','B.4S.TZ','B.4S.FT','B.4S.FTZ'];
+function bagDef(code){ return BAG_TYPES.find(b=>b.code===code); }
+function isTerminated(code){ return TERMINATED.includes(code); }
+function needsV(code,tp){ return tp==='GU'; }
+function needsFB(code){ return code==='B.4S.FT'||code==='B.4S.FTZ'; }
+function neededSpecFields(code, tpbtp){
+  switch(code){
+    case 'B.3S': case 'B.CS': case 'B.3S.ZP': case 'B.CS.ZP': return ['W','L'];
+    case 'B.SU': case 'B.SU.ZP': case 'B.SU.CS': return ['W','L','B'];
+    case 'B.4S': case 'B.4S.FB': return ['W','SG','L'];
+    case 'B.4S.ZP': case 'B.4S.FZ':
+      if(tpbtp==='FA') return ['W','L'];
+      if(tpbtp==='GU') return ['SG','L'];
+      return ['W','SG','L'];
+    case 'B.4S.TG': case 'B.4S.TZ': return ['W','SG','L'];
+    case 'B.4S.FT': case 'B.4S.FTZ': return ['W','SG','L'];
+    case 'B.FL': case 'B.FL.ZP':
+      if(tpbtp==='FA') return ['L','B','W'];
+      if(tpbtp==='FA-F') return ['L','W'];
+      if(tpbtp==='FA-B') return ['L','W'];
+      if(tpbtp==='FABO') return ['L','B','W'];
+      if(tpbtp==='GU') return ['SG','L'];
+      if(tpbtp==='BOT') return ['B','W'];
+      return ['W','L','B','SG'];
+    case 'B.LS': case 'B.LS.1S': return ['W','H','L'];
+    case 'B.LS.SG': case 'B.LS.1S.SG': return ['W','SG','H','L'];
+    case 'B.1S.SG': return ['W','SG','L'];
+    default: return ['W','L','B','SG','H'];
+  }
+}
+const SPEC_FIELD_LABELS = {
+  W:'Rộng túi - W (mm)', L:'Dài túi - L (mm)', B:'Đáy túi - B (mm)',
+  SG:'Hông túi - SG (mm)', H:'Đường hàn lưng - H (mm)',
+  V:'Đầu túi đến hết Zipper - V (mm)', FB:'Gấp đáy - FB (mm)'
+};
+// Canonical display order for spec fields, regardless of which order neededSpecFields()
+// returns them in: Rộng -> Dài -> Đáy -> Hông -> Đường hàn lưng -> Vị trí zipper -> (rest).
+const SPEC_FIELD_ORDER = ['W','L','B','SG','H','V','FB'];
+function sortSpecFields(list){
+  return [...list].sort((a,b)=>{
+    const ia = SPEC_FIELD_ORDER.indexOf(a); const ib = SPEC_FIELD_ORDER.indexOf(b);
+    return (ia<0?999:ia) - (ib<0?999:ib);
+  });
+}
+function floor100(v){ return v==null||isNaN(v)? v : Math.floor(v/100)*100; }
+
+function bagFormula(code, tpbtp, direction, hasPrint, chiaNhan, N, D){
+  const W=D.W,L=D.L,B=D.B,SG=D.SG,H=D.H,V=D.V,FB=D.FB;
+  const chia = chiaNhan? 10*(N-1) : 0;
+  let pti=null, bc=null;
+  switch(code){
+    case 'B.3S': case 'B.CS': {
+      if(direction==='Dọc'){ pti = hasPrint? 2*W*N+4+chia : 2*W*N+chia; bc = hasPrint? L+2 : L; }
+      else { pti = hasPrint? 2*L*N+4+chia : 2*L*N+chia; bc = hasPrint? W+2 : W; }
+      break;
+    }
+    case 'B.3S.ZP': case 'B.CS.ZP': {
+      pti = hasPrint? 2*L*N+10*(N-1)+4 : 2*L*N+10*(N-1);
+      bc = hasPrint? W+2 : W;
+      break;
+    }
+    case 'B.SU': case 'B.SU.ZP': case 'B.SU.CS': {
+      pti = hasPrint? (2*L+B)*N+10*(N-1)+4 : (2*L+B)*N+10*(N-1);
+      bc = hasPrint? W+2 : W;
+      break;
+    }
+    case 'B.4S': case 'B.4S.FB': {
+      pti = hasPrint? (2*W+2*SG)*N+10*(N-1)+4 : (2*W+2*SG)*N+10*(N-1);
+      bc = hasPrint? L+5 : L;
+      break;
+    }
+    case 'B.4S.ZP': case 'B.4S.FZ': {
+      if(tpbtp==='FA'){ pti=(2*L+20)*N; bc=W+6; }
+      else if(tpbtp==='GU'){ pti=(2*SG+12)*N; bc=L-V-2; }
+      else { pti = hasPrint? (2*W+2*SG)*N+10*(N-1)+4 : (2*W+2*SG)*N+10*(N-1); bc = hasPrint? L+5 : L; }
+      break;
+    }
+    case 'B.4S.TG': case 'B.4S.TZ': { pti = 2*W+2*SG+70; bc = L+6; break; }
+    case 'B.4S.FT': case 'B.4S.FTZ': { pti = 2*W+2*SG+70; bc = L+6+FB; break; }
+    case 'B.FL': case 'B.FL.ZP': {
+      if(tpbtp==='FA'){ pti=2*L+B+30; bc=W+6; }
+      else if(tpbtp==='FA-F'){ pti=L+10; bc=W+6; }
+      else if(tpbtp==='FA-B'){ pti=L+12; bc=W+6; }
+      else if(tpbtp==='FABO'){ pti=L+B+26; bc=W+6; }
+      else if(tpbtp==='GU'){ pti=(2*SG+12)*N; bc=L-V-2; }
+      else if(tpbtp==='BOT'){ pti=(2*B+14)*N; bc=W+6; }
+      break;
+    }
+    case 'B.LS': case 'B.LS.1S': {
+      pti = hasPrint? (2*W+2*H)*N+4 : (2*W+2*H)*N; bc = hasPrint? L+5 : L; break;
+    }
+    case 'B.LS.SG': case 'B.LS.1S.SG': {
+      pti = hasPrint? (2*W+2*SG+2*H)*N+4 : (2*W+2*SG+2*H)*N; bc = hasPrint? L+5 : L; break;
+    }
+    case 'B.1S.SG': {
+      pti = hasPrint? (2*W+2*SG)*N+10*(N-1)+4 : (2*W+2*SG)*N+10*(N-1); bc = hasPrint? L+5 : L; break;
+    }
+  }
+  return {pti, bc};
+}
+
+function materialByCode(code){ return DATA.MATERIALS.find(m=>m.code===code); }
+// Density to use for a layer: a manual override (needed when the typed material code isn't in
+// the master list, so there's nothing to look up) takes priority over the looked-up material.
+function layerDensity(l){
+  const ov = numOr(l.dens, null);
+  if(ov!=null && ov>0) return ov;
+  const mat = materialByCode(l.code);
+  return mat? (mat.density||1) : 1;
+}
+
+function validOrders(n){
+  if(n<=2) return ['L1'];
+  if(n===3) return ['L1-L2','L2-L1'];
+  if(n===4) return ['L1-L2-L3','L1-L3-L2','L2-L1-L3','L2-L3-L1','L3-L1-L2','L3-L2-L1'];
+  return [];
+}
+function autoSplice(layersFilled){
+  const n = layersFilled.length;
+  if(n<=2) return 'L1';
+  const groups = layersFilled.map(l=>l.group);
+  if(n===3){ const hit = DATA.SPLICE3.find(r=>r[0]===groups[0]&&r[1]===groups[1]&&r[2]===groups[2]); return hit? hit[3]: null; }
+  if(n===4){ const hit = DATA.SPLICE4.find(r=>r[0]===groups[0]&&r[1]===groups[1]&&r[2]===groups[2]&&r[3]===groups[3]); return hit? hit[4]: null; }
+  return null;
+}
+function passCountFor(posName, orderName){
+  const row = DATA.LAM_PASS[posName];
+  if(!row) return 0;
+  const v = row[orderName];
+  return (v===undefined||v===null)? 0 : v;
+}
+
+function getWasteRows(code){ return DATA.LAM_WASTE.filter(r=>r.code===code); }
+
+/* ===================== App State ===================== */
+const S = {
+  step: 0,
+  mode: null, // 'bag' | 'roll'
+  bag: { code:null, direction:'Ngang', tpbtp:null },
+  spec: { W:null,L:null,B:null,SG:null,H:null,V:null,FB:null, khoTP:null, metTP:null },
+  info: { soMau:0, soNhan:1, phuMo:false, teDao:false, chiaNhan:false },
+  trait: { rice:null, dieCut:null, manualTrait:null },
+  layers: { L1:{code:null,thick:null,dens:null}, L3:{code:null,thick:null,dens:null}, L5:{code:null,thick:null,dens:null}, L7:{code:null,thick:null,dens:null} },
+  spliceOrderManual: null,
+  bandThunManual: null,
+  ptiManual: null,
+  coreInch: 6,
+  coreWall: 10,
+  phe: {}, // per layer overrides {L1:{Pt:.., St:..}, ...}
+  machines: { chia:[], ghep:[], in:[] },
+  boiSoOverride: {}, // per layer manual override of "bội số R" (multiple of R)
+  jointInput: {}
+};
+
+function filledLayers(){
+  const out=[];
+  ['L1','L3','L5','L7'].forEach(pos=>{
+    const l = S.layers[pos];
+    if(l.code){ const m=materialByCode(l.code); out.push({pos, code:l.code, thick:numOr(l.thick,0), group: m? m.group : null, name: m? m.name:l.code, dens:l.dens??null, isCustomMat: !m}); }
+  });
+  return out;
+}
+function hasPrintLayer1(){ return numOr(S.info.soMau,0) > 0; }
+
+/* ===================== Navigation ===================== */
+const STEP_LABELS = ['Loại sản phẩm','Túi / cuộn & quy cách','Cấu trúc màng','Kết quả tính toán','Chọn máy','Số mét cuộn NVL','Mối nối trên cuộn'];
+function goStep(n){ S.step = n; render(); window.scrollTo({top:0,behavior:'instant'}); }
+function next(){ goStep(S.step+1); }
+function back(){ goStep(Math.max(0,S.step-1)); }
+// Item 10: "Nhập lại từ đầu" — wipes every field back to its initial value (distinct from the
+// "giữ dữ liệu" home button, which just navigates to step 0 without touching S).
+function resetAll(){
+  if(!confirm('Nhập lại từ đầu sẽ xóa toàn bộ dữ liệu đã nhập (quy cách, cấu trúc màng, máy đã chọn...). Tiếp tục?')) return;
+  S.mode = null;
+  S.bag = { code:null, direction:'Ngang', tpbtp:null };
+  S.spec = { W:null,L:null,B:null,SG:null,H:null,V:null,FB:null, khoTP:null, metTP:null };
+  S.info = { soMau:0, soNhan:1, phuMo:false, teDao:false, chiaNhan:false };
+  S.trait = { rice:null, dieCut:null, manualTrait:null };
+  S.layers = { L1:{code:null,thick:null,dens:null}, L3:{code:null,thick:null,dens:null}, L5:{code:null,thick:null,dens:null}, L7:{code:null,thick:null,dens:null} };
+  S.spliceOrderManual = null;
+  S.bandThunManual = null;
+  S.ptiManual = null;
+  S.coreInch = 6;
+  S.coreWall = 10;
+  S.phe = {};
+  S.machines = { chia:[], ghep:[], in:[] };
+  S.boiSoOverride = {};
+  S.jointInput = {};
+  S._R = null; S._Bmax = null; S._rAdjustedFor = null; S._nvlRows = null; S._jointsInit = false; S._jointAltR = null;
+  S.jointsOnly = null;
+  O.qtyUnit = 'pcs'; O.qty = null; O.toDungSai = 0; O.bcOverride = null;
+  goStep(0);
+}
+
+/* ===================== Guide modal ===================== */
+function openGuide(){ document.getElementById('guideModal').classList.add('show'); }
+function closeGuide(){ document.getElementById('guideModal').classList.remove('show'); }
+
+/* ===================== Searchable select component ===================== */
+function searchSelect(id, options, selectedCode, placeholder, codeOnly){
+  // options: [{code, label}]
+  const disp = codeOnly? (selectedCode||'') : ((options.find(o=>o.code===selectedCode)||{}).label||'');
+  return `<div class="searchsel" data-role="searchsel" id="${id}">
+    <input type="text" autocomplete="off" placeholder="${esc(placeholder||'Gõ để tìm...')}" data-search-input
+      value="${esc(disp)}">
+    <input type="hidden" data-search-value value="${esc(selectedCode||'')}">
+    <div class="opts"></div>
+  </div>`;
+}
+function wireSearchSelect(root, options, onPick, codeOnly, allowCustom){
+  const wrap = root; // element with class searchsel
+  const input = wrap.querySelector('[data-search-input]');
+  const hidden = wrap.querySelector('[data-search-value]');
+  const optsDiv = wrap.querySelector('.opts');
+  function draw(filter){
+    const f = (filter||'').toLowerCase();
+    const list = options.filter(o=> !f || o.label.toLowerCase().includes(f) || (o.code||'').toLowerCase().includes(f));
+    if(list.length===0){ optsDiv.innerHTML = allowCustom? `<div class="none">Không có trong danh sách — rời khỏi ô để dùng mã "${esc(input.value.trim())}" (nhập lại tỷ trọng)</div>` : '<div class="none">Không tìm thấy</div>'; }
+    else { optsDiv.innerHTML = list.slice(0,200).map(o=>`<div data-code="${esc(o.code)}">${esc(codeOnly? o.code : o.label)}</div>`).join(''); }
+    optsDiv.classList.add('show');
+  }
+  input.addEventListener('focus', ()=>draw(input.value));
+  input.addEventListener('input', ()=>draw(input.value));
+  input.addEventListener('blur', ()=>setTimeout(()=>{
+    optsDiv.classList.remove('show');
+    if(!allowCustom) return;
+    const typed = input.value.trim();
+    if(!typed){ if(hidden.value){ hidden.value=''; onPick(null); } return; }
+    if(typed===hidden.value) return; // unchanged, already committed via a list pick
+    const match = options.find(o=>o.code.toLowerCase()===typed.toLowerCase());
+    if(match){ hidden.value=match.code; input.value = codeOnly? match.code : match.label; onPick(match.code); }
+    else { hidden.value = typed; onPick(typed); } // custom code not in the material list
+  },150));
+  optsDiv.addEventListener('mousedown', (e)=>{
+    const t = e.target.closest('[data-code]');
+    if(!t) return;
+    const code = t.getAttribute('data-code');
+    const opt = options.find(o=>o.code===code);
+    hidden.value = code; input.value = codeOnly? code : (opt?opt.label:'');
+    optsDiv.classList.remove('show');
+    onPick(code);
+  });
+}
+
+// Item 8: force uppercase as the user types into a layer-material code input, preserving caret pos.
+function forceUppercase(inputEl){
+  if(!inputEl) return;
+  inputEl.addEventListener('input', ()=>{
+    const start = inputEl.selectionStart, end = inputEl.selectionEnd;
+    const upper = inputEl.value.toUpperCase();
+    if(upper!==inputEl.value){ inputEl.value = upper; try{ inputEl.setSelectionRange(start,end); }catch(e){} }
+  });
+}
+/* ===================== Focus preservation across re-renders ===================== */
+function getFocusFingerprint(){
+  const a = document.activeElement;
+  if(!a || a===document.body) return null;
+  if(a.id) return {sel:'#'+CSS.escape(a.id), selStart:a.selectionStart, selEnd:a.selectionEnd};
+  const dataAttrs = [...a.attributes].filter(at=>at.name.startsWith('data-'));
+  if(dataAttrs.length){
+    const sel = a.tagName.toLowerCase() + dataAttrs.map(at=>`[${at.name}="${CSS.escape(at.value)}"]`).join('');
+    return {sel, selStart:a.selectionStart, selEnd:a.selectionEnd};
+  }
+  return null;
+}
+function restoreFocus(fp){
+  if(!fp) return;
+  let target=null;
+  try{ target = document.querySelector(fp.sel); }catch(e){ target=null; }
+  if(target){
+    target.focus();
+    if(fp.selStart!=null && typeof target.setSelectionRange==='function'){
+      try{ target.setSelectionRange(fp.selStart, fp.selEnd); }catch(e){}
+    }
+  }
+}
+/* ===================== Render root ===================== */
+function render(){
+  const fp = getFocusFingerprint();
+  const app = document.getElementById('app');
+  app.innerHTML = `
+    <header class="topbar">
+      <img src="data:image/jpeg;base64,${LOGO_B64}" alt="TKMB Group">
+      <h1>Tính toán số mét cuộn màng nguyên vật liệu<span>Công cụ nội bộ TKMB Group</span></h1>
+      ${(typeof S.step==='number' && S.step>0)? `<div class="home-btns">
+        <button class="btn home-btn" id="homeKeepBtn" title="Quay về màn hình chọn loại sản phẩm, giữ nguyên toàn bộ dữ liệu đã nhập">🏠 Chọn lại sản phẩm (giữ dữ liệu)</button>
+        <button class="btn home-btn" id="homeResetBtn" title="Quay về màn hình chọn loại sản phẩm và xóa toàn bộ dữ liệu để nhập lại từ đầu">🔄 Nhập lại từ đầu</button>
+      </div>`:''}
+      <button class="btn" onclick="openGuide()">📘 Hướng dẫn</button>
+    </header>
+    <div class="wrap">
+      ${(typeof S.step==='number' && S.step>0)? stepper(): ''}
+      <div id="stepBody"></div>
+    </div>
+  `;
+  const homeKeep = document.getElementById('homeKeepBtn');
+  if(homeKeep) homeKeep.onclick=()=>goStep(0);
+  const homeReset = document.getElementById('homeResetBtn');
+  if(homeReset) homeReset.onclick=()=>resetAll();
+  const body = document.getElementById('stepBody');
+  if(S.step==='joints') body.appendChild(renderJointsOnly());
+  else if(S.step===0) body.appendChild(renderStep0());
+  else if(S.step===1) body.appendChild(renderStep1());
+  else if(S.step===2) body.appendChild(renderStep3()); // Cấu trúc màng
+  else if(S.step===3) body.appendChild(renderStep4()); // Kết quả tính toán
+  else if(S.step===4) body.appendChild(renderStep5()); // Chọn máy
+  else if(S.step===5) body.appendChild(renderStep6()); // Số mét cuộn NVL
+  else if(S.step===6) body.appendChild(renderStep7()); // Mối nối trên cuộn
+  restoreFocus(fp);
+}
+
+function stepper(){
+  return `<div class="stepper">${STEP_LABELS.map((l,i)=>{
+    const cls = i===S.step? 'on': (i<S.step?'done':'');
+    return `<span class="chip ${cls}">${i+1}. ${l}</span>`;
+  }).join('')}</div>`;
+}
+
+/* ===================== STEP 0: choose product kind ===================== */
+function renderStep0(){
+  const c = el(`<div class="card">
+    <h2 style="text-align:center;margin-bottom:18px">Muốn tính cho sản phẩm loại gì?</h2>
+    <div class="choice2">
+      <div class="choice-card" id="pickBag">
+        <div class="emoji">🛍️</div>
+        <h3>Tính toán dạng túi</h3>
+        <p>Nhập quy cách túi thành phẩm, cấu trúc màng, chọn máy ghép/in/chia/cắt túi để ra số mét cuộn nguyên vật liệu tối ưu.</p>
+      </div>
+      <div class="choice-card" id="pickRoll">
+        <div class="emoji">🎞️</div>
+        <h3>Tính toán dạng cuộn</h3>
+        <p>Nhập khổ màng và số mét cuộn thành phẩm (bán cuộn trực tiếp, không qua máy cắt túi).</p>
+      </div>
+      <div class="choice-card" id="pickJoints">
+        <div class="emoji">🔗</div>
+        <h3>Tính số mối nối</h3>
+        <p>Chỉ để tính số mối nối — tự nhập R, tổng số mét cần và số mét/cuộn NVL từng layer (không cần đi qua toàn bộ quy trình).</p>
+      </div>
+    </div>
+  </div>`);
+  c.querySelector('#pickBag').onclick=()=>{ S.mode='bag'; goStep(1); };
+  c.querySelector('#pickRoll').onclick=()=>{ S.mode='roll'; goStep(1); };
+  c.querySelector('#pickJoints').onclick=()=>{ S.step='joints'; render(); window.scrollTo({top:0,behavior:'instant'}); };
+  return c;
+}
+
+/* ===================== Standalone: joint-count-only calculator (item 15) ===================== */
+function jointsOnlyState(){
+  if(!S.jointsOnly) S.jointsOnly = { R:null, Mt:null, rows:[{label:'Layer 1', X:''}] };
+  return S.jointsOnly;
+}
+function renderJointsOnly(){
+  const st = jointsOnlyState();
+  const Xs = st.rows.map(r=>numOr(r.X)).filter(v=>v>0);
+  const R = numOr(st.R);
+  const Mt = numOr(st.Mt);
+  const result = countJoints(Mt, R, Xs);
+  const wrap = el(`<div class="card">
+    <div class="card-head">
+      <h2>Tính số mối nối (độc lập)</h2>
+      <div class="nav-top">
+        <button class="btn" id="jointsBackBtn">← Quay lại chọn loại sản phẩm</button>
+      </div>
+    </div>
+    <div class="hint">Công cụ độc lập — chỉ để tính số mối nối trên các cuộn thành phẩm khi bạn đã có sẵn R, tổng số mét cần (Mt) và số mét/cuộn NVL nhà cung cấp giao cho từng layer.</div>
+    <div class="grid3">
+      <div class="field"><label>R — số mét cuộn ghép chuẩn (m)</label><input type="text" inputmode="decimal" id="jo_R" value="${st.R??''}"></div>
+      <div class="field"><label>Tổng số mét cần (Mt, m)</label><input type="text" inputmode="decimal" id="jo_Mt" value="${st.Mt??''}"></div>
+      <div></div>
+    </div>
+    <h3 style="margin-top:16px">Số mét/cuộn NVL nhà cung cấp giao theo từng layer</h3>
+    <div id="jo_rows"></div>
+    <button class="btn small" id="jo_addRow" style="margin-top:4px">+ Thêm layer</button>
+    ${result? `
+    <div class="grid2 divided" style="margin-top:20px">
+      <div>
+        <h3>Cuộn chẵn (${result.evenRolls} cuộn)</h3>
+        <div class="table-scroll"><table><thead><tr><th>Số mối nối</th><th>Số cuộn</th><th>Tỷ lệ %</th></tr></thead>
+        <tbody>${Object.keys(result.D1).sort((a,b)=>a-b).map(m=>`<tr><td>${m}</td><td>${result.D1[m]}</td><td>${fmt2(result.P[m])}%</td></tr>`).join('')||'<tr><td colspan="3">—</td></tr>'}</tbody></table></div>
+      </div>
+      <div>
+        <h3>Cuộn lẻ (${result.oddRolls} cuộn)</h3>
+        <div class="table-scroll"><table><thead><tr><th>Số mối nối</th><th>Số cuộn</th></tr></thead>
+        <tbody>${Object.keys(result.D2).sort((a,b)=>a-b).map(m=>`<tr><td>${m}</td><td>${result.D2[m]}</td></tr>`).join('')||'<tr><td colspan="2">—</td></tr>'}</tbody></table></div>
+      </div>
+    </div>
+    <div class="result-line"><span class="lab">Tổng số cuộn thành phẩm (⌈Mt/R⌉)</span><span class="val">${result.totalRolls}</span></div>
+    `: '<div class="note warn" style="margin-top:16px">Nhập đủ R, Mt và ít nhất 1 số mét/cuộn NCC để xem kết quả mối nối.</div>'}
+  </div>`);
+  const rowsHost = wrap.querySelector('#jo_rows');
+  st.rows.forEach((r,idx)=>{
+    const rowEl = el(`<div class="joints-row">
+      <div class="field" style="margin-bottom:0"><label>Tên/label layer</label><input type="text" data-jo-label="${idx}" value="${esc(r.label||'')}"></div>
+      <div class="field" style="margin-bottom:0"><label>Số mét/cuộn NCC giao (m)</label><input type="text" inputmode="decimal" data-jo-x="${idx}" value="${r.X??''}"></div>
+      ${st.rows.length>1? `<button type="button" class="rm-row-btn" data-jo-rm="${idx}" title="Xóa layer này">✕</button>`:'<div></div>'}
+    </div>`);
+    rowsHost.appendChild(rowEl);
+  });
+  wrap.querySelector('#jointsBackBtn').onclick=()=>{ S.mode=null; S.step=0; render(); window.scrollTo({top:0,behavior:'instant'}); };
+  wrap.querySelector('#jo_R').oninput=(e)=>{ st.R=e.target.value; render(); };
+  wrap.querySelector('#jo_Mt').oninput=(e)=>{ st.Mt=e.target.value; render(); };
+  wrap.querySelectorAll('[data-jo-label]').forEach(inp=>{ inp.oninput=(e)=>{ st.rows[+inp.getAttribute('data-jo-label')].label = e.target.value; }; });
+  wrap.querySelectorAll('[data-jo-x]').forEach(inp=>{ inp.oninput=(e)=>{ st.rows[+inp.getAttribute('data-jo-x')].X = e.target.value; render(); }; });
+  wrap.querySelectorAll('[data-jo-rm]').forEach(btn=>{ btn.onclick=()=>{ st.rows.splice(+btn.getAttribute('data-jo-rm'),1); render(); }; });
+  wrap.querySelector('#jo_addRow').onclick=()=>{ st.rows.push({label:'Layer '+(st.rows.length+1), X:''}); render(); };
+  return wrap;
+}
+
+/* ===================== STEP 1: bag/roll pick + quy cách + thông tin khác (merged) ===================== */
+function renderStep1(){
+  const isBag = S.mode==='bag';
+  const def = isBag && S.bag.code? bagDef(S.bag.code) : null;
+  const nV = isBag && S.bag.code && needsV(S.bag.code, S.bag.tpbtp);
+  const nFB = isBag && S.bag.code && needsFB(S.bag.code);
+  const fields = isBag && S.bag.code? neededSpecFields(S.bag.code, S.bag.tpbtp) : [];
+
+  const wrap = el(`<div class="card">
+    <div class="card-head">
+      <h2>${isBag? 'Loại túi &amp; quy cách' : 'Khổ cuộn &amp; quy cách'}</h2>
+      <div class="nav-top">
+        <button class="btn" onclick="back()">← Quay lại</button>
+        <button class="btn primary" id="nextBtn">Tiếp theo →</button>
+      </div>
+    </div>
+    <div class="grid2">
+      <div>
+        ${isBag? `
+          <h3>Loại túi</h3>
+          <div class="hint">Danh sách loại túi lấy theo file Info – Update. Gõ để tìm nhanh.</div>
+          <div class="field">
+            <label>Loại túi <span class="req">*</span></label>
+            ${searchSelect('bagTypeSel', BAG_TYPES.map(b=>({code:b.code,label:`${b.code} — ${b.name}`})), S.bag.code, 'Gõ mã hoặc tên túi...')}
+          </div>
+          <div id="dirBox"></div>
+          <h3 style="margin-top:18px">Quy cách</h3>
+          <div id="specHost">${S.bag.code? '' : '<div class="hint">Chọn loại túi để nhập quy cách.</div>'}</div>
+        `: `
+          <h3>Khổ cuộn</h3>
+          <div class="field"><label>Khổ màng (mm) <span class="req">*</span></label>
+            <input type="number" id="khoTP" value="${S.spec.khoTP??''}"></div>
+          <div class="field"><label>Số mét cuộn thành phẩm (m) <span class="req">*</span></label>
+            <input type="number" id="metTP" value="${S.spec.metTP??''}"></div>
+        `}
+      </div>
+      <div>
+        <h3>Thông tin khác</h3>
+        <div class="info-cols">
+          ${isBag? `<div class="field field-sm" style="grid-column:1;grid-row:1"><label>Loại TP/BTP</label>
+            <select id="f_tpbtp">${def? def.tp.map(t=>`<option value="${t}" ${S.bag.tpbtp===t?'selected':''}>${t}</option>`).join(''):''}</select>
+          </div>`:''}
+          <div class="field field-sm" style="grid-column:1;grid-row:${isBag?2:1}"><label>Số màu</label><input type="number" id="f_mau" min="0" value="${S.info.soMau??0}"></div>
+          <div class="field field-sm" style="grid-column:1;grid-row:${isBag?3:2}"><label>Số nhãn (N)</label><input type="number" id="f_nhan" min="1" value="${S.info.soNhan??1}"></div>
+
+          <div class="field field-sm" style="grid-column:2;grid-row:1"><label>Phủ mờ điểm?</label>
+            <div class="yn"><button data-k="phuMo" data-v="1" class="${S.info.phuMo?'active':''}">Yes</button><button data-k="phuMo" data-v="0" class="${!S.info.phuMo?'active':''}">No</button></div></div>
+          <div class="field field-sm" style="grid-column:2;grid-row:2"><label>Có Tề/Đảo?</label>
+            <div class="yn"><button data-k="teDao" data-v="1" class="${S.info.teDao?'active':''}">Yes</button><button data-k="teDao" data-v="0" class="${!S.info.teDao?'active':''}">No</button></div></div>
+          <div class="field field-sm" style="grid-column:2;grid-row:3"><label>Có chia nhãn?</label>
+            <div class="yn"><button data-k="chiaNhan" data-v="1" class="${S.info.chiaNhan?'active':''}">Yes</button><button data-k="chiaNhan" data-v="0" class="${!S.info.chiaNhan?'active':''}">No</button></div></div>
+          ${(S.info.chiaNhan && numOr(S.info.soNhan,1)<=1)? `<div class="note bad" style="grid-column:1/-1;margin:0"><b>⚠ Không thể chia nhãn</b> khi Số nhãn (N) = 1 — 1 nhãn là nhỏ nhất, không thể chia thêm. Vui lòng tăng Số nhãn hoặc chọn lại "Không".</div>`:''}
+        </div>
+      </div>
+    </div>
+  </div>`);
+
+  if(isBag){
+    wireSearchSelect(wrap.querySelector('#bagTypeSel'), BAG_TYPES.map(b=>({code:b.code,label:`${b.code} — ${b.name}`})), (code)=>{
+      S.bag.code = code;
+      const d = bagDef(code);
+      S.bag.tpbtp = d.tp[0];
+      if(!d.dir) S.bag.direction='Ngang';
+      render();
+    });
+    (function drawDir(){
+      const box = wrap.querySelector('#dirBox');
+      const d = S.bag.code? bagDef(S.bag.code): null;
+      if(d && d.dir){
+        box.innerHTML = `<div class="field" style="margin-top:10px">
+          <label>Chiều nhãn</label>
+          <div class="yn">
+            <button data-d="Ngang" class="${S.bag.direction==='Ngang'?'active':''}">Nhãn ngang</button>
+            <button data-d="Dọc" class="${S.bag.direction==='Dọc'?'active':''}">Nhãn dọc</button>
+          </div>
+        </div>`;
+        box.querySelectorAll('button').forEach(b=>b.onclick=()=>{ S.bag.direction=b.getAttribute('data-d'); render(); });
+      } else box.innerHTML='';
+    })();
+    const specHost = wrap.querySelector('#specHost');
+    if(specHost && S.bag.code){
+      const list0 = [...fields];
+      if(nV) list0.push('V');
+      if(nFB) list0.push('FB');
+      const list = sortSpecFields(list0);
+      specHost.innerHTML = list.map(k=>`<div class="field"><label>${SPEC_FIELD_LABELS[k]||k}</label><input type="number" data-specf="${k}" value="${S.spec[k]??''}"></div>`).join('');
+      const inputs = [...specHost.querySelectorAll('[data-specf]')];
+      inputs.forEach((inp,idx)=>{
+        const k = inp.getAttribute('data-specf');
+        inp.oninput=(e)=>{ S.spec[k]=numOr(e.target.value); };
+        inp.onkeydown=(e)=>{ if(e.key==='Enter'){ e.preventDefault(); const nx=inputs[idx+1]; if(nx) nx.focus(); } };
+      });
+    }
+    const tp = wrap.querySelector('#f_tpbtp'); if(tp) tp.onchange=(e)=>{ S.bag.tpbtp=e.target.value; render(); };
+  } else {
+    const khoI = wrap.querySelector('#khoTP'); const metI = wrap.querySelector('#metTP');
+    khoI.oninput=(e)=>S.spec.khoTP=numOr(e.target.value);
+    metI.oninput=(e)=>S.spec.metTP=numOr(e.target.value);
+    khoI.onkeydown=(e)=>{ if(e.key==='Enter'){ e.preventDefault(); metI.focus(); } };
+  }
+
+  wrap.querySelector('#f_mau').oninput=(e)=>S.info.soMau=numOr(e.target.value,0);
+  wrap.querySelector('#f_nhan').oninput=(e)=>S.info.soNhan=numOr(e.target.value,1);
+  wrap.querySelectorAll('.info-cols .yn button').forEach(b=>b.onclick=()=>{
+    const k = b.getAttribute('data-k'); const v = b.getAttribute('data-v')==='1';
+    if(k==='chiaNhan' && v && numOr(S.info.soNhan,1)<=1){ alert('Không thể chia nhãn khi Số nhãn (N) = 1 — 1 nhãn là nhỏ nhất, không thể chia thêm.'); return; }
+    S.info[k] = v; render();
+  });
+
+  wrap.querySelector('#nextBtn').onclick=()=>{
+    if(isBag){ if(!S.bag.code){ alert('Vui lòng chọn loại túi'); return; } }
+    else { if(!S.spec.khoTP||!S.spec.metTP){ alert('Vui lòng nhập đủ Khổ màng và Số mét cuộn thành phẩm'); return; } }
+    next();
+  };
+  return wrap;
+}
+
+/* ===================== STEP 3: layer structure ===================== */
+const MATERIAL_OPTS = DATA.MATERIALS.map(m=>({code:m.code, label:`${m.code} — ${m.name} (${m.group})`}));
+function renderStep3(){
+  const layers = filledLayers();
+  const n = layers.length;
+  const order = S.spliceOrderManual || autoSplice(layers.map(l=>({group:l.group})));
+  const wrap = el(`<div class="card">
+    <div class="card-head">
+      <h2>Cấu trúc màng</h2>
+      <div class="nav-top">
+        <button class="btn" onclick="back()">← Quay lại</button>
+        <button class="btn primary" id="nextBtn">Tiếp theo →</button>
+      </div>
+    </div>
+    <div class="structure-grid">
+      <div>
+        <div class="hint">Chọn mã màng cho từng lớp (bỏ trống nếu không dùng). Nhấn Enter ở ô độ dày để qua lớp kế tiếp.</div>
+        <div id="layersHost"></div>
+      </div>
+      <div class="order-col">
+        <h3>Thứ tự ghép</h3>
+        ${n>0? `
+        <div class="result-line"><span class="lab">Thứ tự ghép chuẩn (auto)</span><span class="val">${order? esc(order): '<span class="tag bad">Không xác định</span>'}</span></div>
+        <div class="field" style="margin-bottom:0"><label>Chọn lại thứ tự ghép <span class="overrideflag">override</span></label>
+          <select id="orderManual"><option value="">— dùng auto —</option>${validOrders(n).map(o=>`<option value="${o}" ${S.spliceOrderManual===o?'selected':''}>${o}</option>`).join('')}</select></div>
+        `: `<div class="hint">Chọn ít nhất 1 lớp màng để xem thứ tự ghép.</div>`}
+      </div>
+    </div>
+  </div>`);
+  const host = wrap.querySelector('#layersHost');
+  ['L1','L3','L5','L7'].forEach((pos,idx)=>{
+    const label = 'Layer '+pos.slice(1);
+    const isCustom = S.layers[pos].code && !materialByCode(S.layers[pos].code);
+    const rowWrap = el(`<div>
+    <div class="layer-row">
+      <div class="field" style="margin-bottom:0"><label>${label}</label><div style="font-size:11px;color:var(--sub)">Vị trí ${idx===0?'ngoài cùng (in)':'lớp trong'}</div></div>
+      <div class="field" style="margin-bottom:0">${searchSelect('mat_'+pos, MATERIAL_OPTS, S.layers[pos].code, 'Gõ mã màng...', true)}</div>
+      <div class="field" style="margin-bottom:0"><label>Độ dày (mic)</label><input type="number" data-thick="${pos}" value="${S.layers[pos].thick??''}"></div>
+    </div>
+    ${isCustom? `<div class="note warn" style="margin-top:-2px">Mã <b>${esc(S.layers[pos].code)}</b> không có trong danh sách màng — không tra được tỷ trọng tự động.
+      <div class="field" style="max-width:220px;margin-top:6px;margin-bottom:0"><label>Nhập lại tỷ trọng (g/cm³) <span class="overrideflag">override</span></label>
+        <input type="text" inputmode="decimal" data-densover="${pos}" value="${S.layers[pos].dens??''}" placeholder="vd 0.91"></div>
+    </div>`:''}
+    </div>`);
+    host.appendChild(rowWrap);
+    wireSearchSelect(rowWrap.querySelector('#mat_'+pos), MATERIAL_OPTS, (code)=>{ S.layers[pos].code=code||null; if(!code) S.layers[pos].dens=null; render(); }, true, true);
+    forceUppercase(rowWrap.querySelector('#mat_'+pos+' [data-search-input]'));
+    const ti = rowWrap.querySelector('[data-thick]');
+    ti.oninput=(e)=>S.layers[pos].thick=numOr(e.target.value);
+    ti.onkeydown=(e)=>{ if(e.key==='Enter'){ e.preventDefault(); const order=['L1','L3','L5','L7']; const ni=order.indexOf(pos)+1; if(ni<order.length){ const nextInput = host.querySelector(`[data-thick="${order[ni]}"]`); if(nextInput) nextInput.focus(); } } };
+    const dOv = rowWrap.querySelector('[data-densover]');
+    if(dOv) dOv.oninput=(e)=>{ S.layers[pos].dens = e.target.value; render(); };
+  });
+  const orderSel = wrap.querySelector('#orderManual');
+  if(orderSel) orderSel.onchange=(e)=>{ S.spliceOrderManual = e.target.value||null; render(); };
+  wrap.querySelector('#nextBtn').onclick=()=>{
+    if(filledLayers().length===0){ alert('Vui lòng chọn ít nhất 1 lớp màng'); return; }
+    next();
+  };
+  return wrap;
+}
+
+/* ===================== STEP 4: calculation results ===================== */
+function traitOptionsFor(code){
+  const rows = getWasteRows(code);
+  return rows.map(r=>r.trait).filter(t=>t!==null && t!==undefined);
+}
+function guessTrait(code){
+  const rows = getWasteRows(code);
+  if(rows.length<=1) return rows[0]||null;
+  const rice = S.trait.rice; const dieCut = S.trait.dieCut;
+  if(rice===true){ const r=rows.find(r=>/gạo/i.test(r.trait||'')); if(r) return r; }
+  if(dieCut===true){ const r=rows.find(r=>/bế/i.test(r.trait||'')); if(r) return r; }
+  const layers = filledLayers();
+  const groups = layers.map(l=>l.group);
+  const hasPrint = hasPrintLayer1();
+  if(code==='B.SU'||code==='B.SU.ZP'){
+    if(dieCut===true){ return rows.find(r=>/bế/i.test(r.trait))||rows[0]; }
+    const isPP = groups.every(g=>g==='PP');
+    if(hasPrint && isPP){ return rows.find(r=>/có in/i.test(r.trait))||rows[0]; }
+    if(!hasPrint && (isPP||groups.includes('PET'))){ return rows.find(r=>/không in/i.test(r.trait))||rows[0]; }
+    return rows.find(r=>/khác/i.test(r.trait))||rows[0];
+  }
+  if(code==='B.4S'||code==='B.4S.FB'){
+    const special = groups.some(g=>g==='MPET') || (groups.length && groups.every(g=>g==='PE')) || (groups.length && groups.every(g=>g==='PP'));
+    if(special) return rows.find(r=>/MPET/i.test(r.trait))||rows[0];
+    return rows.find(r=>/khác/i.test(r.trait))||rows[0];
+  }
+  if(code==='B.FL'||code==='B.FL.ZP'){
+    const monoPE = groups.length && groups.every(g=>g==='PE');
+    if(monoPE) return rows.find(r=>/mono PE/i.test(r.trait))||rows[0];
+    return rows.find(r=>/khác/i.test(r.trait))||rows[0];
+  }
+  if(code==='B.4S.ZP'){
+    const hasPETBOPP = groups.some(g=>g==='PET'||g==='PP');
+    const allPE = groups.length && groups.every(g=>g==='PE');
+    if(allPE && !hasPETBOPP) return rows.find(r=>/Nhóm PE/i.test(r.trait))||rows[0];
+    return rows.find(r=>/PET|BOPP/i.test(r.trait))||rows[0];
+  }
+  if(code==='B.3S'){
+    if(rice===true) return rows.find(r=>/gạo/i.test(r.trait))||rows[0];
+    return rows.find(r=>/khác/i.test(r.trait))||rows[0];
+  }
+  if(code==='B.CS'){
+    return rows.find(r=>/khác/i.test(r.trait))||rows[0];
+  }
+  return rows[0];
+}
+function activeWasteRow(){
+  const code = S.mode==='roll' ? 'R.AS' : S.bag.code;
+  const rows = getWasteRows(code);
+  if(rows.length===0) return null;
+  if(rows.length===1) return rows[0];
+  if(S.trait.manualTrait){ const r=rows.find(r=>r.trait===S.trait.manualTrait); if(r) return r; }
+  return guessTrait(code);
+}
+
+function computeAll(){
+  const layers = filledLayers();
+  const hasPrint = hasPrintLayer1();
+  const N = Math.max(1, numOr(S.info.soNhan,1));
+  let pti, bc;
+  if(S.mode==='roll'){
+    const K = numOr(S.spec.khoTP,0);
+    pti = hasPrint? K*N+4 : K*N;
+    bc = null;
+  } else {
+    const r = bagFormula(S.bag.code, S.bag.tpbtp, S.bag.direction, hasPrint, S.info.chiaNhan, N, S.spec);
+    pti = r.pti; bc = r.bc;
+  }
+  const ptiFinal = overrideVal(S.ptiManual, pti);
+  const terminated = S.mode==='bag' && isTerminated(S.bag.code);
+  const bandThunAuto = roundBandThun(ptiFinal, terminated);
+  const bandThunFinal = overrideVal(S.bandThunManual, bandThunAuto);
+  const k1 = roundK1({pti:ptiFinal, terminated, phuMo:S.info.phuMo, bandThun:bandThunFinal});
+  const kGhep = bandThunFinal + 10;
+
+  // splice order
+  const order = S.spliceOrderManual || autoSplice(layers.map(l=>({group:l.group})));
+  const n = layers.length;
+
+  const wasteRow = activeWasteRow();
+  const soMau = numOr(S.info.soMau,0);
+
+  const layerCalc = layers.map((l,idx)=>{
+    const posName = 'Layer '+l.pos.slice(1);
+    const lan = order? Math.max(1,Math.min(3,passCountFor(posName, order))) : 1;
+    let Pt=null, St=null, Tt=null;
+    if(wasteRow){
+      Pt = [wasteRow.cuon1,wasteRow.cuon2,wasteRow.cuon3][lan-1];
+      St = soMau>2 ? wasteRow.setupgt2 : wasteRow.setup02;
+      Tt = [wasteRow.tui1,wasteRow.tui2,wasteRow.tui3][lan-1];
+    }
+    const override = S.phe[l.pos]||{};
+    Pt = overrideVal(override.Pt, Pt);
+    St = overrideVal(override.St, St);
+    Tt = overrideVal(override.Tt, Tt);
+    const isPrintLayer = idx===0 && hasPrint;
+    const kho = isPrintLayer ? k1 : kGhep;
+    return {...l, posName, lan, Pt, St, Tt, kho, isPrintLayer};
+  });
+
+  const maxThickLayer = layerCalc.reduce((a,b)=> (b.thick>(a?a.thick:-1)? b: a), null);
+  const T_total = layerCalc.reduce((s,l)=>s+numOr(l.thick,0),0) + 2*Math.max(0,(n-1));
+
+  const coreC = S.coreInch*25.4 + 2*numOr(S.coreWall,8);
+
+  return {layers:layerCalc, hasPrint, N, pti, ptiFinal, terminated, bandThunAuto, bandThunFinal, k1, kGhep, order, n, T_total, coreC, maxThickLayer, bc, wasteRow};
+}
+
+function bagMachineBmax(){
+  const tp = S.bag.tpbtp;
+  let grp=null;
+  if(S.bag.code && isTerminated(S.bag.code)) grp='Cắt trên BM11';
+  else if(tp==='FA') grp='FA'; else if(tp==='GU') grp='GU'; else if(tp==='BOT') grp='BOT';
+  else if(S.bag.code && S.bag.code.startsWith('B.3S')) grp='3 biên';
+  else grp='Nhóm khác';
+  const row = DATA.BAGMAKING_GROUPS.find(g=>g.group===grp);
+  return row? row.dia_adj : 800;
+}
+function computeBmaxAndR(calc){
+  if(S.mode==='bag'){
+    const Bmax = bagMachineBmax();
+    const Rraw = (Math.pow(Bmax,2)-Math.pow(calc.coreC,2))*Math.PI/(4*Math.max(1,calc.T_total));
+    const R = floor100(Rraw);
+    return {Bmax, R, Rraw, basis:'Năng lực máy làm túi (theo TP/BTP)'};
+  }
+  // Roll mode (item 13, sửa lại ở đợt 10): R là bội số k×metTP lớn nhất vừa năng lực máy —
+  // cuộn R-mét được ghép thành 1 cuộn duy nhất, sau đó (nếu cần) cắt/chia trên máy chia thành
+  // k cuộn thành phẩm dài đúng metTP. Điểm khác biệt của đợt 10: Bmax không còn lấy cứng từ
+  // bảng máy làm túi (không liên quan đến dạng cuộn) mà lấy theo năng lực ĐẦU THU (dia_in_max)
+  // của nhóm máy phù hợp:
+  //   - Nếu sản phẩm cần chia (đã tick "tách/đảo" hoặc "chia nhân", hoặc việc ghép 1 lần cho
+  //     ra nhiều hơn 1 cuộn TP tức phải cắt) -> Bmax lấy theo năng lực đầu thu máy CHIA (vì dạng
+  //     cuộn không qua công đoạn cắt túi, cuộn to phải được chia nhỏ trên máy chia).
+  //   - Nếu sản phẩm KHÔNG chia (ghép ra thẳng đúng 1 cuộn TP, không cắt) -> Bmax lấy theo năng
+  //     lực đầu thu máy GHÉP (cuộn thành phẩm cuốn thẳng ở đầu thu máy ghép).
+  // Đây là giá trị TẠM (provisional/generic, trước khi người dùng chọn máy cụ thể ở bước 5):
+  // lấy min(dia_in_max) trong toàn bộ danh sách máy chia/máy ghép hiện có, tương tự cách app
+  // đã lấy năng lực nhỏ nhất trong nhóm máy ở các chỗ khác (capCheckTable, minCap...). Giá trị
+  // này sẽ được tinh chỉnh lại theo ĐÚNG máy đã chọn ở bước 5 (xem computeRt / item 14).
+  function genericDiaInMax(list){
+    const vals = (list||[]).map(m=>m.dia_in_max).filter(v=>v!=null && !isNaN(v));
+    return vals.length? Math.min(...vals) : null;
+  }
+  const BmaxChia = genericDiaInMax(DATA.SLIT_MACHINES) || 790;
+  const BmaxGhep = genericDiaInMax(DATA.LAM_MACHINES) || 790;
+  const metTP = numOr(S.spec.metTP,0);
+  function calcForBmax(Bmax){
+    const theoreticalRaw = (Math.pow(Bmax,2)-Math.pow(calc.coreC,2))*Math.PI/(4*Math.max(1,calc.T_total));
+    const theoretical = floor100(theoreticalRaw);
+    let R, k;
+    if(metTP>0){
+      k = Math.max(1, Math.floor(theoretical/metTP));
+      R = k*metTP;
+    } else {
+      k = 1; R = theoretical;
+    }
+    return {Bmax, R, k, theoretical};
+  }
+  // Bước 1: thử theo máy chia trước (giả định cần chia) — nếu người dùng đã khai rõ là cần
+  // chia (teDao/chiaNhan) thì dùng luôn kết quả này.
+  let out = calcForBmax(BmaxChia);
+  let usedChia = true;
+  const declaredChia = !!(S.info.teDao || S.info.chiaNhan);
+  if(!declaredChia && out.k<=1){
+    // Không khai báo cần chia, và ngay cả với năng lực (thận trọng hơn) của máy chia thì 1 cuộn
+    // ghép cũng chỉ đủ đúng 1 cuộn TP (không dư ra để cắt thêm) -> đây thực sự là trường hợp
+    // "không chia": chuyển sang lấy Bmax theo năng lực đầu thu máy ghép.
+    out = calcForBmax(BmaxGhep);
+    usedChia = false;
+  }
+  const basis = usedChia
+    ? `Năng lực đầu thu máy chia (Bmax=${fmt0(out.Bmax)}mm) — dạng cuộn cần chia nên không qua cắt túi; R = k×số mét cuộn thành phẩm (k=${out.k}) lớn nhất vừa năng lực`
+    : `Năng lực đầu thu máy ghép (Bmax=${fmt0(out.Bmax)}mm) — không chia, R = k×số mét cuộn thành phẩm (k=${out.k}) lớn nhất vừa năng lực`;
+  return {Bmax: out.Bmax, R: out.R, k: out.k, theoretical: out.theoretical, basis};
+}
+
+function diaForLen(len, T_mic, C){ return Math.sqrt((4*T_mic*len)/Math.PI + C*C); }
+function grWeightForLen(calc, len){
+  return calc.layers.reduce((sum,l)=>{
+    const dens = layerDensity(l);
+    const extra = l.isPrintLayer?2:0;
+    return sum + (l.thick*dens+extra)*l.kho*len/1000000;
+  },0);
+}
+function machinesForBandThun(width){
+  const w = Math.round(numOr(width, NaN));
+  if(isNaN(w)) return [];
+  const names = DATA.RUBBER_STOCK.filter(r=>Math.round(r.width)===w).map(r=>r.machine);
+  return [...new Set(names)];
+}
+function renderStep4(){
+  const calc = computeAll();
+  const askRice = S.mode==='bag' && ['B.3S','B.4S','B.4S.FB'].includes(S.bag.code);
+  const askDieCut = S.mode==='bag' && ['B.SU','B.SU.ZP'].includes(S.bag.code);
+
+  const {Bmax, R, k, basis, theoretical} = computeBmaxAndR(calc);
+  const grAtR = grWeightForLen(calc, R);
+  const bandAutoMachines = machinesForBandThun(calc.bandThunAuto);
+  const bandManualMachines = S.bandThunManual!=null && S.bandThunManual!=='' ? machinesForBandThun(numOr(S.bandThunManual)) : null;
+
+  const wrap = el(`<div class="card">
+    <div class="card-head">
+      <h2>Kết quả tính toán</h2>
+      <div class="nav-top">
+        <button class="btn" onclick="back()">← Quay lại</button>
+        <button class="btn primary" id="nextBtn">Tiếp theo →</button>
+      </div>
+    </div>
+    ${(askRice||askDieCut)? `<div class="note"><b>Đặc điểm sản phẩm</b> — mục này không link được từ dữ liệu màng, cần xác nhận để tra đúng tỷ lệ phế/setup:
+      <div class="grid2" style="margin-top:8px">
+        ${askRice? `<div class="field" style="margin-bottom:0"><label>Có đựng sản phẩm gạo không?</label><div class="yn">
+          <button data-k="rice" data-v="1" class="${S.trait.rice===true?'active':''}">Yes</button>
+          <button data-k="rice" data-v="0" class="${S.trait.rice===false?'active':''}">No</button></div></div>`:''}
+        ${askDieCut? `<div class="field" style="margin-bottom:0"><label>Có phải túi bế không?</label><div class="yn">
+          <button data-k="dieCut" data-v="1" class="${S.trait.dieCut===true?'active':''}">Yes</button>
+          <button data-k="dieCut" data-v="0" class="${S.trait.dieCut===false?'active':''}">No</button></div></div>`:''}
+      </div>
+    </div>`:''}
+
+    <div class="grid3 divided">
+      <div>
+        <h3>PTI</h3>
+        <div class="result-line"><span class="lab">PTI (auto)</span><span class="val val-emph">${fmt0(calc.pti)} mm</span></div>
+        <div class="field"><label>Nhập lại PTI nếu khác <span class="overrideflag">override</span></label>
+          <input type="text" inputmode="decimal" id="ptiManual" value="${S.ptiManual??''}" placeholder="để trống = dùng auto"></div>
+      </div>
+      <div>
+        <h3>Bánh thun</h3>
+        <div class="result-line"><span class="lab">Bánh thun chuẩn (auto)</span><span class="val val-emph">${fmt0(calc.bandThunAuto)} mm</span></div>
+        <div class="hint" style="margin-top:4px">Máy có bánh thun này: ${bandAutoMachines.length? esc(bandAutoMachines.join(', ')) : 'không có máy nào'}</div>
+        <div class="field" style="margin-top:8px"><label>Nhập lại bánh thun (tận dụng tồn kho) <span class="overrideflag">override</span></label>
+          <input type="text" inputmode="decimal" id="bandManual" value="${S.bandThunManual??''}" placeholder="để trống = dùng auto"></div>
+        ${bandManualMachines? `<div class="hint" style="margin-top:6px">Máy có bánh thun ${fmt0(numOr(S.bandThunManual))}mm: ${bandManualMachines.length? esc(bandManualMachines.join(', ')) : 'không có máy nào'}</div>`:''}
+      </div>
+      <div>
+        <h3>Khổ màng</h3>
+        <div class="result-line"><span class="lab">Khổ màng in (K1, layer in)</span><span class="val">${fmt0(calc.k1)} mm</span></div>
+        <div class="result-line"><span class="lab">Khổ màng ghép (layer còn lại)</span><span class="val">${fmt0(calc.kGhep)} mm</span></div>
+        <div class="result-line"><span class="lab">Core lõi</span><span class="val">
+          <select id="coreInch" style="width:auto;display:inline-block"><option value="3" ${S.coreInch==3?'selected':''}>3 inch</option><option value="6" ${S.coreInch==6?'selected':''}>6 inch</option></select>
+          + <select id="coreWall" style="width:auto;display:inline-block">${[8,10,12,15].map(v=>`<option value="${v}" ${Number(S.coreWall)===v?'selected':''}>${v}</option>`).join('')}</select> mm</span></div>
+      </div>
+    </div>
+
+    <div class="grid-rphe" style="margin-top:16px">
+      <div class="note">
+        <b>Số mét cuộn ghép chuẩn (R)</b> — cơ sở: ${esc(basis)}.
+        <div class="hint" style="margin:4px 0">Bmax = ${fmt0(Bmax)} mm, core lõi C = ${fmt2(calc.coreC)} mm, tổng độ dày màng ghép T = ${fmt2(calc.T_total)} mic.</div>
+        ${S.mode==='roll'? `<div class="hint" style="margin:4px 0">Chiều dài lý thuyết tối đa theo năng lực (đã làm tròn xuống hàng trăm): ${fmt0(theoretical)} m. Số mét cuộn thành phẩm (metTP) = ${fmt0(numOr(S.spec.metTP,0))} m → R = k×metTP với k=${k} (số cuộn thành phẩm cắt được từ 1 cuộn ghép) = ${fmt0(R)} m.${(numOr(S.spec.metTP,0)>theoretical)? ' <b style="color:var(--bad)">⚠ metTP vượt quá năng lực lý thuyết (kể cả k=1) — cân nhắc giảm số mét cuộn thành phẩm.</b>':''}</div>`:''}
+        <div class="result-line" style="margin-top:6px"><span class="lab">R${S.mode==='bag'?' (làm tròn hàng trăm)':''}</span><span class="val" style="font-size:16px">${fmt0(R)} m</span></div>
+        <div class="result-line"><span class="lab">Gr ở R hiện dùng</span><span class="val">${fmt2(grAtR)} kg</span></div>
+        <div class="hint" style="margin-top:4px">Xác nhận/điều chỉnh R theo năng lực máy thực tế ở bước "Chọn máy" tiếp theo.</div>
+      </div>
+      <div>
+        <h3 style="margin-top:0">Phế &amp; Setup</h3>
+        <div class="table-scroll"><table class="phe-table"><thead><tr><th>Layer</th><th>Số lần ghép</th><th>Phế ghép %</th><th>${S.mode==='roll'?'Setup ghép (m)':'Setup túi (m)'}</th><th>Phế ghép - cắt túi (%)</th></tr></thead>
+        <tbody>
+        ${calc.layers.map(l=>`<tr><td>${l.posName}${l.isPrintLayer?' (in)':''}</td><td>${l.lan}</td>
+          <td>${fmt2(l.Pt)}% <input type="text" inputmode="decimal" step="0.01" data-pheover="${l.pos}" data-f="Pt" value="${(S.phe[l.pos]&&S.phe[l.pos].Pt!=null)?S.phe[l.pos].Pt:''}" placeholder="khác" style="width:60px;display:inline-block;margin-left:4px;padding:5px 6px"></td>
+          <td>${fmt0(l.St)} <input type="text" inputmode="decimal" data-pheover="${l.pos}" data-f="St" value="${(S.phe[l.pos]&&S.phe[l.pos].St!=null)?S.phe[l.pos].St:''}" placeholder="khác" style="width:60px;display:inline-block;margin-left:4px;padding:5px 6px"></td>
+          <td>${l.Tt!=null?fmt2(l.Tt)+'%':'—'} <input type="text" inputmode="decimal" step="0.01" data-pheover="${l.pos}" data-f="Tt" value="${(S.phe[l.pos]&&S.phe[l.pos].Tt!=null)?S.phe[l.pos].Tt:''}" placeholder="khác" style="width:60px;display:inline-block;margin-left:4px;padding:5px 6px"></td>
+        </tr>`).join('')}
+        </tbody></table></div>
+      </div>
+    </div>
+  </div>`);
+
+  wrap.querySelectorAll('.yn button').forEach(b=>b.onclick=()=>{ S.trait[b.getAttribute('data-k')] = b.getAttribute('data-v')==='1'; S.trait.manualTrait=null; render(); });
+  wrap.querySelector('#ptiManual').oninput=(e)=>{ S.ptiManual = e.target.value; render(); };
+  wrap.querySelector('#bandManual').oninput=(e)=>{ S.bandThunManual = e.target.value; render(); };
+  wrap.querySelector('#coreInch').onchange=(e)=>{ S.coreInch=numOr(e.target.value,3); render(); };
+  wrap.querySelector('#coreWall').onchange=(e)=>{ S.coreWall = numOr(e.target.value,8); render(); };
+  wrap.querySelectorAll('[data-pheover]').forEach(inp=>{
+    inp.oninput=(e)=>{
+      const pos = inp.getAttribute('data-pheover'); const f = inp.getAttribute('data-f');
+      S.phe[pos] = S.phe[pos]||{};
+      S.phe[pos][f] = e.target.value;
+      render();
+    };
+  });
+  wrap.querySelector('#nextBtn').onclick=()=>{
+    // Fresh entry into "Chọn máy" always starts from the base standard R — any prior
+    // capacity-based auto-adjustment from a previous visit is discarded here.
+    S._R = R; S._Bmax = Bmax; S._rAdjustedFor = null;
+    next();
+  };
+  return wrap;
+}
+
+/* ===================== STEP 5: machine selection ===================== */
+function machineToggle(list, name){
+  const i = list.indexOf(name);
+  if(i>=0) list.splice(i,1); else list.push(name);
+}
+function renderMachineGrid(title, machines, selList, iconMap, bandWidth){
+  // bandWidth: when given (ghép grid only), show a green tick / red X badge for whether that
+  // machine's rubber-band stock covers the current bánh thun width — a reminder only, no effect
+  // on any calculation.
+  const stocked = bandWidth!=null ? machinesForBandThun(bandWidth) : null;
+  return `<h3>${title}</h3><div class="machine-grid">${machines.map(m=>{
+    const sel = selList.includes(m.name);
+    const specs = [];
+    if(m.dia_out_max!=null) specs.push(`Xả: Ø${m.dia_out_max}mm`);
+    if(m.dia_in_max!=null) specs.push(`Thu: Ø${m.dia_in_max}mm`);
+    if(m.wt_out_max!=null) specs.push(`Xả: ${m.wt_out_max}kg`);
+    if(m.wt_in_max!=null) specs.push(`Thu: ${m.wt_in_max}kg`);
+    if(m.dia_max!=null) specs.push(`Ø${m.dia_max}mm`);
+    if(m.wt_max!=null) specs.push(`${m.wt_max}kg`);
+    const badge = stocked? (stocked.includes(m.name)? `<span class="avail-badge yes" title="Có sẵn bánh thun khổ ${fmt0(bandWidth)}mm">✓</span>` : `<span class="avail-badge no" title="Không có sẵn bánh thun khổ ${fmt0(bandWidth)}mm">✕</span>`) : '';
+    return `<div class="machine-card ${sel?'sel':''}" data-mach="${esc(m.name)}">
+      ${badge}
+      <div class="ic">${iconMap}</div>
+      <div><b>${esc(m.name)}</b><div class="specs">${specs.join(' · ')||'Chưa có thông số'}</div></div>
+    </div>`;
+  }).join('')}</div>`;
+}
+// Capacity check table for one "side" of a machine (side='in' = đầu thu / dia_in_max,wt_in_max;
+// side='out' = đầu xả / dia_out_max,wt_out_max).
+function capCheckTable(title, machinesSel, dia, wt, side){
+  if(machinesSel.length===0) return {html:'', allOk:true};
+  const diaKey = side==='out'? 'dia_out_max' : 'dia_in_max';
+  const wtKey = side==='out'? 'wt_out_max' : 'wt_in_max';
+  const diaLabel = side==='out'? 'Đường kính (đầu xả)' : 'Đường kính (đầu thu)';
+  const wtLabel = side==='out'? 'Khối lượng (đầu xả)' : 'Khối lượng (đầu thu)';
+  const rows = machinesSel.map(m=>{
+    const diaMax = m[diaKey], wtMax = m[wtKey];
+    const diaOK = diaMax==null || dia <= diaMax + 0.01;
+    const wtOK = wtMax==null || wtMax==='N/A' || wt <= wtMax;
+    return {name:m.name, diaMax, wtMax, ok:diaOK&&wtOK};
+  });
+  const html = `<h3 style="margin-top:18px">${esc(title)}</h3>
+    <div class="table-scroll"><table><thead><tr><th>Máy</th><th>Đáp ứng năng lực?</th><th>${esc(diaLabel)}</th><th>${esc(wtLabel)}</th></tr></thead>
+    <tbody>${rows.map(f=>`<tr><td>${esc(f.name)}</td><td>${f.ok?'<span class="tag good">Yes</span>':'<span class="tag bad">No</span>'}</td><td>${fmt0(dia)} / ${f.diaMax!=null?fmt0(f.diaMax):'—'} mm</td><td>${fmt2(wt)} / ${f.wtMax==='N/A'?'N/A':(f.wtMax!=null?fmt0(f.wtMax):'—')} kg</td></tr>`).join('')}</tbody></table></div>`;
+  return {html, allOk: rows.every(r=>r.ok)};
+}
+// Rt: the optimal roll length given the CURRENTLY SELECTED machines, checking every relevant
+// capacity point — máy ghép đầu thu; and (if chia/đảo needed) máy chia đầu xả (full, undivided
+// roll feeds in) and máy chia đầu thu (split into N tracks when chia nhãn, so that capacity is
+// multiplied by N rather than dividing the actual weight — same result, matches the spec) —
+// then takes whichever is tightest against the standard R. Re-run from scratch whenever the
+// machine selection changes (the caller resets S._rAdjustedFor on any selection change).
+function computeRt(calc, R_chuan, ghepSel, chiaSel, needChia, chiaNhan, N){
+  const K = grWeightForLen(calc, 1); // kg per meter of the full (undivided) laminated roll
+  const lenFromDia = (diaCap)=> Math.max(0, Math.pow(diaCap,2)-Math.pow(calc.coreC,2))*Math.PI/(4*Math.max(1,calc.T_total));
+  const candidates = [R_chuan];
+  if(ghepSel.length){
+    const diaCaps = ghepSel.map(m=>m.dia_in_max).filter(v=>v!=null && !isNaN(v));
+    if(diaCaps.length) candidates.push(lenFromDia(Math.min(...diaCaps)));
+    const wtCaps = ghepSel.map(m=>m.wt_in_max).filter(v=>v!=null && v!=='N/A' && !isNaN(v));
+    if(wtCaps.length && K>0) candidates.push(Math.min(...wtCaps)/K);
+  }
+  if(needChia && chiaSel.length){
+    const diaCapsXa = chiaSel.map(m=>m.dia_out_max).filter(v=>v!=null && !isNaN(v));
+    if(diaCapsXa.length) candidates.push(lenFromDia(Math.min(...diaCapsXa)));
+    const wtCapsXa = chiaSel.map(m=>m.wt_out_max).filter(v=>v!=null && v!=='N/A' && !isNaN(v));
+    if(wtCapsXa.length && K>0) candidates.push(Math.min(...wtCapsXa)/K);
+
+    // Item 14: for roll mode, đầu THU máy chia receives the roll AFTER it has already been cut
+    // into finished-length (metTP) pieces — so it is checked separately against metTP (see
+    // renderStep5's fit-check), not folded into the candidates that bound R/Rt here. Bag mode is
+    // unchanged: đầu thu máy chia still constrains R directly (chia nhãn splits by width, not by
+    // length, so the full R-length roll really does reach that receiving end undivided).
+    if(S.mode!=='roll'){
+      const diaCapsThu = chiaSel.map(m=>m.dia_in_max).filter(v=>v!=null && !isNaN(v));
+      if(diaCapsThu.length) candidates.push(lenFromDia(Math.min(...diaCapsThu)));
+      const wtCapsThu = chiaSel.map(m=>m.wt_in_max).filter(v=>v!=null && v!=='N/A' && !isNaN(v));
+      if(wtCapsThu.length && K>0){
+        const cap = Math.min(...wtCapsThu);
+        const allowedFullWt = chiaNhan? cap*N : cap; // capacity × N instead of dividing the weight — same fit test
+        candidates.push(allowedFullWt/K);
+      }
+    }
+  }
+  const feasible = Math.min(...candidates);
+  if(!isFinite(feasible) || feasible<=0) return null;
+  // Item 13: roll-mode R must always be an exact multiple of metTP (k × metTP, k integer ≥ 1) —
+  // pick the LARGEST such k that still fits the tightest machine capacity found above. If even
+  // k=1 (a single finished-length roll) doesn't fit, there is no valid R — infeasible.
+  if(S.mode==='roll'){
+    const metTP = numOr(S.spec.metTP,0);
+    if(metTP>0){
+      const k = Math.floor(feasible/metTP);
+      if(k<1) return null;
+      return k*metTP;
+    }
+    return feasible>=R_chuan? R_chuan : floor100(feasible);
+  }
+  if(feasible>=R_chuan) return R_chuan;
+  return floor100(feasible);
+}
+function renderStep5(){
+  const calc = computeAll();
+  // Item 13/14: in roll mode, whenever the combined laminated roll (R) has to be cut into more
+  // than 1 finished-length piece (k>1), that cut happens on máy chia too — so the machine-choice
+  // step must surface it even when neither Tề/Đảo nor Chia nhãn is set. k here is the PROVISIONAL
+  // value from the generic (pre-machine-selection) capacity envelope; the actual Rt/k for the
+  // selected machines is re-derived below and may differ, but this is enough to decide whether
+  // to show the máy chia section at all.
+  const provisional = S.mode==='roll'? computeBmaxAndR(calc) : null;
+  const needChia = S.info.teDao || S.info.chiaNhan || (S.mode==='roll' && provisional && provisional.k>1);
+
+  const wrap = el(`<div class="card">
+    <div class="card-head">
+      <h2>Chọn máy sử dụng</h2>
+      <div class="nav-top">
+        <button class="btn" onclick="back()">← Quay lại</button>
+        <button class="btn primary" id="nextBtn">Tiếp theo →</button>
+      </div>
+    </div>
+
+    <div id="bandWarnHost"></div>
+    <div class="hint" style="margin-top:14px">Có thể chọn nhiều máy cùng lúc; hệ thống lấy năng lực nhỏ nhất (min) trong các máy đã chọn để tính số mét tối đa.</div>
+    ${needChia? `<div id="chiaHost"></div>`:'<div class="note">Không có Tề/Đảo, Chia nhãn, hoặc không cần cắt thành nhiều cuộn thành phẩm → bỏ qua bước chọn máy chia.</div>'}
+    <div id="ghepHost"></div>
+    <div id="inHost"></div>
+    <div id="fitHost"></div>
+  </div>`);
+  if(needChia){
+    wrap.querySelector('#chiaHost').innerHTML = renderMachineGrid('Máy chia / đảo', DATA.SLIT_MACHINES, S.machines.chia, '✂️');
+  }
+  wrap.querySelector('#ghepHost').innerHTML = renderMachineGrid('Máy ghép', DATA.LAM_MACHINES, S.machines.ghep, '🧵', calc.bandThunFinal);
+  wrap.querySelector('#inHost').innerHTML = renderMachineGrid('Máy in', DATA.PRINT_MACHINES, S.machines.in, '🖨️');
+
+  // Warn if any selected ghép machine doesn't actually stock the resolved bánh thun width
+  // (e.g. bánh thun chỉ có ở Sinomech nhưng người dùng lại chọn Comexi).
+  if(S.machines.ghep.length && calc.bandThunFinal!=null){
+    const stocked = machinesForBandThun(calc.bandThunFinal);
+    const mismatch = S.machines.ghep.filter(m=>!stocked.includes(m));
+    if(mismatch.length){
+      wrap.querySelector('#bandWarnHost').innerHTML = `<div class="note" style="background:var(--bad-soft);border-color:var(--bad);color:var(--bad)">⚠ Máy ghép đã chọn (${esc(mismatch.join(', '))}) không có sẵn bánh thun khổ ${fmt0(calc.bandThunFinal)}mm trong kho — bánh thun này chỉ có ở: ${stocked.length? esc(stocked.join(', ')) : 'không có máy nào'}.</div>`;
+    }
+  }
+
+  // Fit-check against the SELECTED machines only. R starts as the base standard value from
+  // the previous step (S._R). If a capacity-based adjustment was previously applied here, it
+  // only stays valid for the exact machine selection it was computed for — any change to that
+  // selection (adding OR removing a machine) drops the adjustment and falls back to the base
+  // R, so the fit-check and any new suggestion are always recomputed for the CURRENT selection.
+  const {R: baseR} = computeBmaxAndR(calc);
+  const curMachSig = JSON.stringify({g:[...S.machines.ghep].sort(), c:[...S.machines.chia].sort()});
+  if(S._rAdjustedFor!=null && S._rAdjustedFor!==curMachSig){
+    S._R = baseR;
+    S._rAdjustedFor = null;
+  }
+  if(!S._R) S._R = baseR;
+  const R = S._R || 0;
+  if(R>0){
+    const dia = diaForLen(R, calc.T_total, calc.coreC);
+    const grFull = grWeightForLen(calc, R);
+    const N = Math.max(1, numOr(S.info.soNhan,1));
+    // Chia (label-splitting) reduces the WEIGHT each label-track carries at the đầu THU of the
+    // chia machine (proportional to width), but not the diameter, and not the đầu XẢ (which
+    // still receives the whole undivided roll).
+    const grForChiaThu = S.info.chiaNhan ? grFull/N : grFull;
+    const ghepSel = DATA.LAM_MACHINES.filter(m=>S.machines.ghep.includes(m.name));
+    const chiaSel = DATA.SLIT_MACHINES.filter(m=>S.machines.chia.includes(m.name));
+    let fitHtml = `<div class="note">Kiểm tra năng lực dựa trên R = ${fmt0(R)} m đã chọn ở bước trước, đường kính cuộn ${fmt0(dia)} mm, khối lượng cuộn ${fmt2(grFull)} kg.</div>`;
+    const ghepFit = capCheckTable('Đáp ứng năng lực máy ghép (đầu thu)?', ghepSel, dia, grFull, 'in');
+    fitHtml += ghepFit.html;
+    let allOk = ghepFit.allOk;
+    if(needChia){
+      const chiaXaFit = capCheckTable('Đáp ứng năng lực máy chia/đảo (đầu xả)?', chiaSel, dia, grFull, 'out');
+      fitHtml += chiaXaFit.html;
+      allOk = allOk && chiaXaFit.allOk;
+      if(S.mode==='roll'){
+        // Item 14: for roll mode, the đầu THU of máy chia only ever sees an already-cut,
+        // finished-length (metTP) piece — the roll was already split into k = R/metTP pieces by
+        // the đầu xả above — so its capacity check uses metTP, not R.
+        const metTP = numOr(S.spec.metTP,0);
+        const diaThu = diaForLen(metTP, calc.T_total, calc.coreC);
+        const grThu = grWeightForLen(calc, metTP);
+        const kNow = metTP>0? Math.round(R/metTP) : 1;
+        fitHtml += `<div class="hint" style="margin-top:6px">Sản phẩm dạng cuộn: cuộn ghép (R=${fmt0(R)} m) đã được cắt thành ${kNow} cuộn thành phẩm (metTP=${fmt0(metTP)} m/cuộn) trước khi tới đầu thu máy chia → năng lực đầu thu tính theo metTP, không tính theo R.</div>`;
+        const chiaThuFit = capCheckTable('Đáp ứng năng lực máy chia/đảo (đầu thu)? — theo metTP', chiaSel, diaThu, grThu, 'in');
+        fitHtml += chiaThuFit.html;
+        allOk = allOk && chiaThuFit.allOk;
+      } else {
+        if(S.info.chiaNhan) fitHtml += `<div class="hint" style="margin-top:6px">Cuộn có chia nhãn (N=${N}) → khối lượng mỗi track ở đầu thu máy chia = ${fmt2(grForChiaThu)} kg (đã chia cho số nhãn) trước khi soát xét năng lực.</div>`;
+        const chiaThuFit = capCheckTable('Đáp ứng năng lực máy chia/đảo (đầu thu)?', chiaSel, dia, grForChiaThu, 'in');
+        fitHtml += chiaThuFit.html;
+        allOk = allOk && chiaThuFit.allOk;
+      }
+    }
+    if(ghepSel.length || chiaSel.length){
+      // Rt: recompute the optimal length from scratch for the CURRENT machine selection every
+      // render (per item 9.3) — never carried over from a different combination of machines.
+      const Rt = computeRt(calc, baseR, ghepSel, chiaSel, needChia, S.info.chiaNhan, N);
+      if(Rt==null){
+        fitHtml += `<div class="note" style="background:var(--bad-soft);border-color:var(--bad);color:var(--bad)">⚠ Không tìm được số mét phù hợp với các máy đã chọn — cần chọn máy có năng lực lớn hơn.</div>`;
+      } else if(Rt < R){
+        const metTP = numOr(S.spec.metTP,0);
+        const segNote = (S.mode==='roll' && metTP>0)
+          ? ` (= ${Math.round(Rt/metTP)} cuộn thành phẩm × ${fmt0(metTP)} m/cuộn)` : '';
+        fitHtml += `<div class="note" style="background:var(--bad-soft);border-color:var(--bad);color:var(--bad)">⚠ R hiện tại (${fmt0(R)} m) không đáp ứng năng lực máy đã chọn.
+          Số mét tối ưu mới <b>Rt = ${fmt0(Rt)} m</b>${segNote}. <button type="button" class="btn small" id="applyRt" data-r="${Rt}" style="margin-left:8px">Áp dụng Rt = ${fmt0(Rt)} m</button>
+        </div>`;
+      } else {
+        fitHtml += `<div class="note" style="background:var(--good-soft);border-color:var(--good);color:var(--good)">✓ R hiện tại (${fmt0(R)} m) đáp ứng năng lực các máy đã chọn — không cần điều chỉnh.</div>`;
+      }
+    }
+    wrap.querySelector('#fitHost').innerHTML = fitHtml;
+    const applyBtn = wrap.querySelector('#applyRt');
+    if(applyBtn) applyBtn.onclick=()=>{
+      const v = numOr(applyBtn.getAttribute('data-r'));
+      S._R = v; S._rAdjustedFor = curMachSig;
+      render();
+    };
+  }
+
+  wrap.querySelectorAll('.machine-card').forEach(card=>{
+    card.onclick=()=>{
+      const name = card.getAttribute('data-mach');
+      const host = card.closest('#chiaHost,#ghepHost,#inHost');
+      const list = host.id==='chiaHost'? S.machines.chia : host.id==='ghepHost'? S.machines.ghep : S.machines.in;
+      machineToggle(list, name);
+      render();
+    };
+  });
+  wrap.querySelector('#nextBtn').onclick=()=>{
+    if(S.machines.ghep.length===0){ alert('Vui lòng chọn ít nhất 1 máy ghép'); return; }
+    if(S.machines.in.length===0 && hasPrintLayer1()){ if(!confirm('Chưa chọn máy in — vẫn tiếp tục?')) return; }
+    next();
+  };
+  return wrap;
+}
+
+/* ===================== STEP 6: NVL roll length ===================== */
+function minCap(list, key){
+  const vals = list.map(m=>m[key]).filter(v=>v!=null && v!=='N/A' && !isNaN(v));
+  if(vals.length===0) return null;
+  return Math.min(...vals);
+}
+function maxLenFromDia(dia, core, thick_mic){
+  if(dia==null||thick_mic<=0) return Infinity;
+  return (Math.pow(dia,2)-Math.pow(core,2))*Math.PI/(4*thick_mic);
+}
+function maxLenFromWeight(wt, density, width_mm, thick_mic, extra){
+  if(wt==null||width_mm<=0) return Infinity;
+  const denom = (thick_mic*density + (extra||0)) * width_mm;
+  if(denom<=0) return Infinity;
+  return wt*1000000/denom;
+}
+function renderStep6(){
+  const calc = computeAll();
+  const R = S._R || 1;
+  // Item 1 (đợt 8): every raw film layer feeds into the SAME lamination batch, sized at R mét —
+  // so the "bội số" (multiple) that sizes each raw-material roll must always be a multiple of R
+  // (never of metTP alone), otherwise the raw rolls don't line up with what the máy ghép actually
+  // consumes per batch and buying stops being a clean multiple of the ghép batch.
+  const unit = R;
+  const core = calc.coreC;
+
+  const ghepSel = DATA.LAM_MACHINES.filter(m=>S.machines.ghep.includes(m.name));
+  const inSel = DATA.PRINT_MACHINES.filter(m=>S.machines.in.includes(m.name));
+
+  // Xả (feed-in) capacity of the laminator — this is what limits each individual
+  // raw film layer's own roll size as it feeds into lamination (not the finished,
+  // already-laminated output roll).
+  const ghepDiaOut = minCap(ghepSel,'dia_out_max');
+  const ghepWtOut = minCap(ghepSel,'wt_out_max');
+  const inDia = minCap(inSel,'dia_max');
+  const inWt = minCap(inSel,'wt_max');
+
+  const rows = calc.layers.map(l=>{
+    const dens = layerDensity(l);
+    const extra = l.isPrintLayer? 2: 0;
+    let candidates = [];
+    if(l.isPrintLayer){
+      candidates.push(maxLenFromDia(inDia, core, l.thick));
+      candidates.push(maxLenFromWeight(inWt, dens, l.kho, l.thick, extra));
+    }
+    candidates.push(maxLenFromDia(ghepDiaOut, core, l.thick));
+    candidates.push(maxLenFromWeight(ghepWtOut, dens, l.kho, l.thick, extra));
+    const maxLen = Math.min(...candidates);
+    const kAuto = isFinite(maxLen)? Math.floor(maxLen/unit) : null;
+    // Item 5: default the multiple actually USED to 1 nhãn (not the auto-computed max) — the
+    // user types their own override in "Nhập lại bội số" if they want a different multiple.
+    // kAuto itself stays as the informational "Bội số tối đa (auto)" ceiling.
+    const kDefault = (kAuto!=null && kAuto>0) ? 1 : kAuto;
+    const kFinal = overrideVal(S.boiSoOverride[l.pos], kDefault);
+    const finalLen = (kFinal!=null && kFinal>0)? kFinal*unit : null;
+    return {...l, dens, maxLen, kAuto, kAutoRaw:kAuto, kFinal, finalLen};
+  });
+
+  // Iteratively: (a) pick the reference (thickest) layer and derive phế ghép per row from
+  // EACH row's own %-for-its-own-số-lần-ghép (r.Pt — already looked up for that row's lan, so
+  // no further ×lan multiplication); (b) once phế is added, re-check the resulting "Số mét cuộn
+  // NVL (gồm phế)" against máy ghép's đầu xả capacity — a length that fit BEFORE adding phế can
+  // still exceed capacity once phế is added, in which case the max multiple (bội số tối đa) for
+  // that row is reduced by 1 and everything recomputed, since the reference length may itself
+  // have changed. Repeats until stable (a few passes is always enough at this scale).
+  let cur = rows.map(r=>({...r}));
+  let maxThick=null, refLen=null, pheGhep1Lan=null, pheGhep2Lan=null, pheGhep3Lan=null, pheIn=null;
+  for(let iter=0; iter<6; iter++){
+    maxThick = cur.reduce((a,b)=>(b.thick>(a?a.thick:-1)?b:a), null);
+    refLen = maxThick? maxThick.finalLen : null;
+    pheGhep1Lan = (calc.wasteRow && refLen)? ceil10(refLen*((calc.wasteRow.cuon1??0)/100)) : null;
+    pheGhep2Lan = (calc.wasteRow && refLen)? ceil10(refLen*((calc.wasteRow.cuon2??0)/100)) : null;
+    pheGhep3Lan = (calc.wasteRow && refLen)? ceil10(refLen*((calc.wasteRow.cuon3??0)/100)) : null;
+    const printRow = cur.find(r=>r.isPrintLayer);
+    pheIn = printRow && printRow.finalLen!=null ? ceil10(printRow.finalLen*0.025) : null;
+
+    let changed = false;
+    for(const r of cur){
+      r.pheGhepRow = (r.Pt!=null && refLen)? ceil10(refLen*(r.Pt/100)) : null;
+      r.nvl = r.finalLen!=null ? r.finalLen + (r.pheGhepRow||0) + (r.isPrintLayer? (pheIn||0):0) : null;
+      const hasOverride = S.boiSoOverride[r.pos]!=null && S.boiSoOverride[r.pos]!=='';
+      if(!hasOverride && r.nvl!=null && r.kFinal!=null && r.kFinal>0){
+        const dia2 = diaForLen(r.nvl, r.thick, core);
+        const wt2 = (r.thick*r.dens + (r.isPrintLayer?2:0))*r.kho*r.nvl/1000000;
+        const diaOver = ghepDiaOut!=null && dia2 > ghepDiaOut + 0.01;
+        const wtOver = (ghepWtOut!=null && ghepWtOut!=='N/A') && wt2 > ghepWtOut;
+        if(diaOver || wtOver){
+          // Even the default multiple (1 nhãn) no longer fits once phế is added — there is no
+          // smaller positive multiple, so flag the row infeasible instead of looping further down.
+          r.kFinal = 0; r.finalLen = null; r.nvl = null;
+          changed = true;
+        }
+      }
+    }
+    if(!changed) break;
+  }
+  const rowsFinal = cur;
+  const anyReduced = rowsFinal.some(r=>r.kAutoRaw!=null && r.kFinal!=null && r.kFinal<=0);
+  const infeasible = rowsFinal.some(r=>(r.kFinal==null || r.kFinal<=0));
+
+  const wrap = el(`<div class="card">
+    <div class="card-head">
+      <h2>Số mét cuộn nguyên vật liệu</h2>
+      <div class="nav-top">
+        <button class="btn" onclick="back()">← Quay lại</button>
+        <button class="btn primary" id="nextBtn">Tiếp theo → Tính mối nối</button>
+      </div>
+    </div>
+    <div class="note">Nguyên tắc: mỗi lớp màng NVL (riêng, chưa ghép) → máy in (nếu là lớp in) → máy ghép (cuộn xả), đơn vị bội số = R (số mét cuộn ghép chuẩn) = ${fmt0(unit)} m. "Bội số tối đa" là bội số cho CHIỀU DÀI TỐI ĐA CỦA TỪNG LỚP MÀNG RIÊNG lẻ, tính theo ĐỘ DÀY RIÊNG của từng lớp (không phải độ dày tổng đã ghép) và theo năng lực máy in/máy ghép ở đầu vào.</div>
+    ${infeasible? `<div class="note" style="background:var(--bad-soft);border-color:var(--bad);color:var(--bad)">⚠ Có layer không đạt nổi 1× bội số (kể cả mặc định 1 nhãn) với năng lực máy đã chọn — hãy chọn máy lớn hơn, hoặc dùng ô "Nhập lại bội số" để tự nhập bội số phù hợp với nhà cung cấp.</div>`:''}
+    ${anyReduced? `<div class="note warn">ℹ Mặc định 1 nhãn của một số layer không đủ vượt qua phế ghép/phế in ở năng lực đầu xả máy ghép hiện tại — xem cột "Bội số tối đa (auto)" và cân nhắc chọn máy khác, hoặc tự nhập bội số phù hợp.</div>`:''}
+    <div class="table-scroll"><table class="nvl-table">
+      <thead><tr><th>Layer</th><th>Khổ (mm)</th><th>Độ dày (mic)</th><th>Số lần ghép</th><th>Bội số tối đa (auto)</th><th>Nhập lại bội số</th><th>Số mét NVL (theo bội số)</th><th>Phế ghép (m)</th><th>Phế in (m)</th><th class="nvl-highlight">Số mét cuộn NVL (gồm phế)</th></tr></thead>
+      <tbody>
+      ${rowsFinal.map(r=>`<tr>
+        <td>${r.posName}${r.isPrintLayer?' (in)':''}<br><span style="font-size:11px;color:var(--sub)">${esc(r.code)}</span></td>
+        <td>${fmt0(r.kho)}</td>
+        <td>${fmt0(r.thick)}</td>
+        <td>${r.lan}</td>
+        <td>${r.kAuto!=null? r.kAuto : '—'}</td>
+        <td><input type="text" inputmode="decimal" class="hl-input" data-boiso="${r.pos}" value="${S.boiSoOverride[r.pos]??''}" placeholder="mặc định 1 (tối đa ${r.kAuto!=null?r.kAuto:0})" style="width:120px;text-align:center"></td>
+        <td>${fmt0(r.finalLen)}</td>
+        <td>${fmt0(r.pheGhepRow)}</td>
+        <td>${r.isPrintLayer? fmt0(pheIn) : '—'}</td>
+        <td class="nvl-highlight" style="font-weight:700">${fmt0(r.nvl)}</td>
+      </tr>`).join('')}
+      </tbody>
+    </table></div>
+    <div class="grid2" style="margin-top:14px;align-items:start">
+      <div>
+        <div class="result-line"><span class="lab">Layer làm chuẩn tính phế (dày nhất)</span><span class="val">${maxThick? maxThick.posName : '—'}</span></div>
+        <div class="result-line"><span class="lab">Số mét phế cho 1 lần ghép</span><span class="val">${fmt2(pheGhep1Lan)} m</span></div>
+        <div class="hint" style="margin:-2px 0 6px">Cách tính: ${refLen!=null&&calc.wasteRow?`${fmt0(refLen)} m × ${fmt2(calc.wasteRow.cuon1)}% (phế ghép 1 lần), làm tròn lên hàng chục`:'—'}</div>
+        <div class="result-line"><span class="lab">Số mét phế cho 2 lần ghép</span><span class="val">${fmt2(pheGhep2Lan)} m</span></div>
+        <div class="hint" style="margin:-2px 0 6px">Cách tính: ${refLen!=null&&calc.wasteRow?`${fmt0(refLen)} m × ${fmt2(calc.wasteRow.cuon2)}% (phế ghép 2 lần), làm tròn lên hàng chục`:'—'}</div>
+        <div class="result-line"><span class="lab">Số mét phế cho 3 lần ghép</span><span class="val">${fmt2(pheGhep3Lan)} m</span></div>
+        <div class="hint" style="margin:-2px 0">Cách tính: ${refLen!=null&&calc.wasteRow?`${fmt0(refLen)} m × ${fmt2(calc.wasteRow.cuon3)}% (phế ghép 3 lần), làm tròn lên hàng chục`:'—'}</div>
+      </div>
+      <div>
+        <h3 style="margin-top:0">Tóm tắt số mét</h3>
+        ${S.mode==='roll'? `<div class="result-line"><span class="lab">Số mét thành phẩm</span><span class="val">${fmt0(numOr(S.spec.metTP,0))} m</span></div>`:''}
+        <div class="result-line"><span class="lab">Số mét cuộn ghép chuẩn (R)</span><span class="val">${fmt0(R)} m${S.mode==='roll'&&numOr(S.spec.metTP,0)>0?` <span style="font-weight:400;color:var(--sub)">(bội số ${Math.round(R/numOr(S.spec.metTP,1))}× số mét thành phẩm)</span>`:''}</span></div>
+        <div class="hint" style="margin:2px 0 8px">Số mét cuộn NVL chuẩn (gồm phế) từng layer, kèm bội số đang dùng (so với R):</div>
+        ${rowsFinal.map(r=>`<div class="result-line"><span class="lab">${r.posName}${r.isPrintLayer?' (in)':''}</span><span class="val">${fmt0(r.nvl)} m <span style="font-weight:400;color:var(--sub)">(bội số ${r.kFinal!=null&&r.kFinal>0?r.kFinal:'—'}×)</span></span></div>`).join('')}
+      </div>
+    </div>
+  </div>`);
+  wrap.querySelectorAll('[data-boiso]').forEach(inp=>{
+    inp.oninput=(e)=>{
+      const pos = inp.getAttribute('data-boiso');
+      let v = e.target.value;
+      // Item 6 (đợt 9): bội số nhập lại không được lớn hơn "Bội số tối đa (auto)" của layer đó —
+      // vượt quá mức này thì cuộn NVL không còn vừa năng lực máy nữa nên phải chặn lại tại chỗ.
+      const row = rowsFinal.find(r=>r.pos===pos);
+      const maxK = row? row.kAuto : null;
+      if(v!=='' && maxK!=null && maxK>0){
+        const n = parseFloat(v);
+        if(!isNaN(n) && n>maxK){ v = String(maxK); e.target.value = v; }
+      }
+      S.boiSoOverride[pos] = v;
+      render();
+    };
+  });
+  wrap.querySelector('#nextBtn').onclick=()=>{ S._nvlRows = rowsFinal; next(); };
+  return wrap;
+}
+
+/* ===================== STEP 7: joint count from supplier meters ===================== */
+// Item 4 (đợt 9): đúng thuật toán trong skill "film-splice-count" — 2 lỗi đã sửa so với bản cũ:
+// 1. Loại trừ - bao hàm (inclusion-exclusion): khi >=2 layer cùng phát sinh mối nối tại ĐÚNG 1 vị
+//    trí (bội số chung / LCM của các X), chỉ được đếm 1 lần — bản cũ cộng dồn riêng theo từng
+//    layer nên đếm trùng bất cứ khi nào 2 X có ước số chung.
+// 2. Cuộn lẻ cuối cùng: nếu Mt không chia hết cho R, biên phải của cuộn cuối phải là min(k*R, Mt),
+//    không phải luôn là k*R như bản cũ (khiến cuộn cuối bị tính dư mối nối vượt quá độ dài thật).
+function gcd2(a,b){ a=Math.abs(a); b=Math.abs(b); while(b){ const t=b; b=a%b; a=t; } return a; }
+function lcmList(nums){ return nums.reduce((acc,n)=> acc*n/gcd2(acc,n), 1); }
+// So mối nối (bội số của L) rơi vào BÊN TRONG cuộn thứ k (không tính đúng điểm cắt biên).
+function splicesInsideRoll(L, k, R, Mt){
+  const right = Math.min(k*R, Mt);
+  const left = (k-1)*R;
+  return Math.floor((right-1)/L) - Math.floor(left/L);
+}
+// Tổng số mối nối (đã khử trùng bằng loại trừ - bao hàm) rơi vào cuộn thứ k.
+function jointsForRoll(k, R, Mt, Xs){
+  const n = Xs.length;
+  let total = 0;
+  for(let mask=1; mask<(1<<n); mask++){
+    const subset=[];
+    for(let i=0;i<n;i++){ if(mask & (1<<i)) subset.push(Xs[i]); }
+    const sign = (subset.length%2===1) ? 1 : -1;
+    total += sign * splicesInsideRoll(lcmList(subset), k, R, Mt);
+  }
+  return total;
+}
+function countJoints(Mt, R, Xs){
+  Xs = Xs.filter(x=>x>0);
+  if(!(Mt>0) || !(R>0) || Xs.length===0) return null;
+  const totalRolls = Math.ceil(Mt/R);
+  const evenRolls = Math.floor(Mt/R);
+  const D1={}, D2={};
+  for(let k=1;k<=evenRolls;k++){
+    const j = jointsForRoll(k, R, Mt, Xs);
+    D1[j]=(D1[j]||0)+1;
+  }
+  for(let k=evenRolls+1;k<=totalRolls;k++){
+    const j = jointsForRoll(k, R, Mt, Xs);
+    D2[j]=(D2[j]||0)+1;
+  }
+  const P={}; for(const m in D1){ P[m]= evenRolls>0? (D1[m]/evenRolls*100):0; }
+  return {totalRolls, evenRolls, oddRolls: totalRolls-evenRolls, D1, D2, P};
+}
+function totalJointsFor(Mt, R, Xs){
+  Xs = Xs.filter(x=>x>0);
+  if(!(Mt>0) || !(R>0) || Xs.length===0) return 0;
+  const totalRolls = Math.ceil(Mt/R);
+  let sum=0;
+  for(let k=1;k<=totalRolls;k++) sum += jointsForRoll(k, R, Mt, Xs);
+  return sum;
+}
+// When the supplier's own raw-material roll length (X, per layer) is fixed, the only lever left
+// to cut down on splices is the length WE choose to laminate at (R). Scan candidate R values and
+// pick whichever gives the fewest total joints across every finished roll — ties broken toward
+// the larger R (fewer, longer rolls also means less repeated setup/phế elsewhere).
+// Item 5 (đợt 8): ở dạng cuộn, cuộn ghép chuẩn R luôn phải là bội số của "số mét thành phẩm"
+// (ràng buộc đợt 7 mục 13-14 vẫn giữ nguyên) — nên khi dò R mới để giảm mối nối, chỉ được quét
+// qua các giá trị R = k × unitStep (k=1,2,3,...), không được quét tự do như dạng túi.
+// Item 5 (đợt 9): R mới đề xuất KHÔNG được vượt quá năng lực máy đã chọn — maxCap (nếu có, tính
+// từ computeRt với năng lực thực tế) giới hạn trần trên của phạm vi dò, để không bao giờ đề xuất
+// một R lớn hơn mức máy móc thực sự chịu được.
+function bestRForJoints(Mt, Xs, unitStep, maxCap){
+  Xs = Xs.filter(x=>x>0);
+  if(!(Mt>0) || Xs.length===0) return null;
+  const cap = (maxCap!=null && isFinite(maxCap) && maxCap>0) ? maxCap : Infinity;
+  if(unitStep>0){
+    let upper = Math.max(unitStep, Math.min(Mt*2, Math.max(...Xs)*6));
+    upper = Math.min(upper, cap);
+    if(upper < unitStep) return null;
+    let best = null;
+    for(let R=unitStep; R<=upper; R+=unitStep){
+      const totalJ = totalJointsFor(Mt, R, Xs);
+      if(best===null || totalJ<best.totalJ || (totalJ===best.totalJ && R>best.R)) best = {R, totalJ};
+    }
+    return best;
+  }
+  const maxX = Math.max(...Xs);
+  let upper = Math.max(100, Math.min(Mt, maxX*6));
+  upper = Math.min(upper, cap);
+  const step = Math.max(10, Math.round(upper/300));
+  if(upper < step) return null;
+  let best = null;
+  for(let R=step; R<=upper; R+=step){
+    const totalJ = totalJointsFor(Mt, R, Xs);
+    if(best===null || totalJ<best.totalJ || (totalJ===best.totalJ && R>best.R)) best = {R, totalJ};
+  }
+  return best;
+}
+/* ===== Order quantity -> total meters (Mt/Mc) ===== */
+const O = { // order-quantity panel state
+  qtyUnit: 'pcs', // pcs | m | pde
+  qty: null,
+  toDungSai: 0,
+  bcOverride: null,
+};
+function computeOrderMt(calc){
+  // Tổng số mét cần (Mt) is a pure order-quantity conversion — the same value for every layer
+  // (it no longer depends on phế % or setup, which are handled separately in Phế & Setup).
+  const N = calc.N;
+  const To = numOr(O.toDungSai,0);
+  let Mt;
+  if(S.mode==='bag'){
+    const BC = overrideVal(O.bcOverride, calc.bc);
+    const Qt = numOr(O.qty,0);
+    Mt = Qt*((BC||0)/1000)*(1+To/200)*(1/N);
+  } else {
+    let Qc = numOr(O.qty,0);
+    if(O.qtyUnit==='pde'){ const BC = overrideVal(O.bcOverride, calc.bc||0); Qc = Qc*BC/1000; }
+    Mt = Qc*(1+To/200)*(1/N);
+  }
+  return Math.round(Mt*100)/100;
+}
+function renderStep7(){
+  const calc = computeAll();
+  const R = S._R || 1;
+  const layers = calc.layers;
+
+  if(!S._jointsInit){
+    S._jointsInit = true;
+    O.qty = null;
+  }
+  // Item 11: roll mode never sells by piece count — normalize away a stale 'pcs' selection so the
+  // dropdown state always matches one of the options actually rendered for this mode.
+  if(S.mode==='roll' && O.qtyUnit==='pcs') O.qtyUnit='m';
+
+  // Always fully automatic — no manual override — per the attached formula.
+  const mtAuto = computeOrderMt(calc);
+
+  // Item 12: R is fully automatic here — always the live, current standard roll length from
+  // "Chọn máy" (S._R), recomputed there from scratch on every relevant change. It is no longer
+  // stored/edited as its own independent joint-state value.
+  const jointState = S.jointInput;
+  if(!jointState.X) jointState.X = {};
+  layers.forEach(l=>{ if(jointState.X[l.pos]==null) jointState.X[l.pos]=''; });
+
+  const Xs = layers.map(l=>numOr(jointState.X[l.pos])).filter(v=>v>0);
+  const result = countJoints(mtAuto, R, Xs);
+
+  const wrap = el(`<div class="card">
+    <div class="card-head">
+      <h2>Tính tổng số mét đơn hàng &amp; số mối nối</h2>
+      <div class="nav-top">
+        <button class="btn" onclick="back()">← Quay lại</button>
+        <button class="btn primary" onclick="alert('Hoàn tất tính toán!')">✓ Hoàn tất</button>
+      </div>
+    </div>
+    <h3>1. Tổng số mét đơn hàng cần</h3>
+    <div class="grid3">
+      <div class="field"><label>Đơn vị số lượng đơn hàng</label>
+        <select id="qtyUnit">
+          ${S.mode==='bag'?`<option value="pcs" ${O.qtyUnit==='pcs'?'selected':''}>Số lượng túi (Qt, pcs)</option>`:''}
+          <option value="m" ${O.qtyUnit==='m'?'selected':''}>Số mét (Qc, m)</option>
+          ${S.mode==='roll'?`<option value="pde" ${O.qtyUnit==='pde'?'selected':''}>Số mét (quy theo bước cắt)</option>`:''}
+        </select></div>
+      <div class="field"><label>Số lượng đơn hàng</label><input type="text" inputmode="decimal" id="qtyVal" value="${O.qty??''}"></div>
+      <div class="field"><label>Dung sai đơn hàng To (%)</label><input type="text" inputmode="decimal" id="toVal" value="${O.toDungSai??0}"></div>
+    </div>
+    ${S.mode==='bag'||O.qtyUnit==='pde' ? `<div class="field" style="max-width:260px"><label>Bước cắt BC (mm) <span class="overrideflag">auto=${fmt0(calc.bc)}, có thể nhập lại</span></label>
+      <input type="text" inputmode="decimal" id="bcVal" value="${O.bcOverride??''}" placeholder="auto ${fmt0(calc.bc)}"></div>`:''}
+
+    <h3 style="margin-top:20px">2. Số mối nối dự kiến trên các cuộn thành phẩm</h3>
+    <div class="hint">R lấy tự động từ "Chọn máy" (mục trước) — mỗi khi năng lực máy hoặc thông tin thay đổi, R sẽ tự tính lại từ đầu. Nhập số mét/cuộn NVL nhà cung cấp giao thực tế cho từng layer. "Tổng số mét cần" được tính auto từ mục 1 (không cộng thêm phế/setup).</div>
+    <div class="grid3">
+      <div class="field"><label>R — số mét cuộn ghép chuẩn (m) <span class="overrideflag">auto</span></label><input type="text" id="jR" value="${fmt0(R)} m" disabled style="font-weight:700"></div>
+      <div class="field"><label>Tổng số mét cần (m) <span class="overrideflag">auto</span></label><input type="text" value="${fmt2(mtAuto)} m" disabled style="font-weight:700"></div>
+      <div></div>
+    </div>
+    <div class="row-nowrap">
+    ${layers.map(l=>{
+      const nvlRow = (S._nvlRows||[]).find(r=>r.pos===l.pos);
+      // "Số mét cuộn NVL chuẩn" hiển thị ở đây là số ĐÃ GỒM PHẾ (r.nvl), khớp cột "Số mét cuộn NVL
+      // (gồm phế)" đã tính ở bước trước.
+      const nvlLen = nvlRow? nvlRow.nvl : null;
+      // Item 3 (đợt 9): đúng công thức trong file "Tổng số mét cần mua cho màng in.docx":
+      //   Màng ghép:  Tổng số mét cần mua = Tổng số mét cần × (1 + %Phế ghép[-cắt túi]) + Setup ghép/túi
+      //   Màng in:    Tổng số mét cần mua = [Tổng số mét cần × (1+%Phế ghép) + Setup ghép/túi] × (1+%Phế in) + Setup in
+      // Setup ghép/túi (St) chỉ CỘNG 1 LẦN — không còn nhân với số cuộn NVL cần mua như đợt 8 (đó
+      // là công thức sai). Setup in tra theo số màu (PRINT_WASTE_SETUP.setup_by_color).
+      const pctPheGhep = (numOr(l.Pt,0) + numOr(l.Tt,0))/100;
+      const base = mtAuto*(1+pctPheGhep) + numOr(l.St,0);
+      const wastePctIn = numOr(DATA.PRINT_WASTE_SETUP && DATA.PRINT_WASTE_SETUP.waste_pct, 2.5)/100;
+      const soMauKey = Math.max(0, Math.min(11, Math.round(numOr(S.info.soMau,0))));
+      const setupIn = l.isPrintLayer ? numOr(DATA.PRINT_WASTE_SETUP && DATA.PRINT_WASTE_SETUP.setup_by_color[String(soMauKey)], 0) : 0;
+      const tongMua = l.isPrintLayer ? base*(1+wastePctIn) + setupIn : base;
+      return `<div class="field"><label>${l.posName} — số mét/cuộn NCC giao (m)</label>
+      <div style="font-size:11px;color:var(--sub);margin-bottom:3px">${esc(l.code||'—')}${l.isPrintLayer?' · lớp in':''}</div>
+      <div class="result-line" style="padding:3px 0;border-bottom:none"><span class="lab">Tổng số mét cần mua</span><span class="val">${fmt2(tongMua)} m</span></div>
+      <div class="result-line" style="padding:3px 0 8px;border-bottom:none"><span class="lab">Số mét cuộn NVL chuẩn</span><span class="val">${fmt0(nvlLen)} m</span></div>
+      <input type="text" inputmode="decimal" data-jx="${l.pos}" value="${jointState.X[l.pos]}"></div>`;
+    }).join('')}
+    </div>
+    ${result? `
+    <div class="grid2 divided">
+      <div>
+        <h3>Cuộn chẵn (${result.evenRolls} cuộn)</h3>
+        <div class="table-scroll"><table><thead><tr><th>Số mối nối</th><th>Số cuộn</th><th>Tỷ lệ %</th></tr></thead>
+        <tbody>${Object.keys(result.D1).sort((a,b)=>a-b).map(m=>`<tr><td>${m}</td><td>${result.D1[m]}</td><td>${fmt2(result.P[m])}%</td></tr>`).join('')||'<tr><td colspan="3">—</td></tr>'}</tbody></table></div>
+      </div>
+      <div>
+        <h3>Cuộn lẻ (${result.oddRolls} cuộn)</h3>
+        <div class="table-scroll"><table><thead><tr><th>Số mối nối</th><th>Số cuộn</th></tr></thead>
+        <tbody>${Object.keys(result.D2).sort((a,b)=>a-b).map(m=>`<tr><td>${m}</td><td>${result.D2[m]}</td></tr>`).join('')||'<tr><td colspan="2">—</td></tr>'}</tbody></table></div>
+      </div>
+    </div>
+    <div class="result-line"><span class="lab">Tổng số cuộn thành phẩm (⌈Mt/R⌉)</span><span class="val">${result.totalRolls}</span></div>
+    `: '<div class="note warn">Nhập đủ R, Mt và ít nhất 1 số mét/cuộn NCC để xem kết quả mối nối.</div>'}
+
+    <h3 style="margin-top:20px">3. Đề xuất lại chiều dài cuộn ghép (R) để giảm mối nối</h3>
+    <div class="hint">Khi số mét/cuộn NVL của nhà cung cấp (X) là cố định, đòn bẩy duy nhất để giảm mối nối/phế là điều chỉnh lại R nội bộ. Công cụ dò một R mới (dựa trên tổng số mét cần Mt và các X đã nhập) cho tổng số mối nối ít nhất, KHÔNG BAO GIỜ vượt quá năng lực máy đã chọn ở bước "Chọn máy" — đây CHỈ LÀ MỘT PHÉP TÍNH THAM KHẢO riêng, không thay đổi R tự động ở mục 2.${S.mode==='roll'?' Ở dạng cuộn, R mới đề xuất luôn là bội số của số mét thành phẩm.':''}</div>
+    ${(()=>{
+      if(Xs.length===0 || !(mtAuto>0)) return '<div class="note warn">Nhập ít nhất 1 số mét/cuộn NCC (X) ở mục 2 để nhận đề xuất R.</div>';
+      const unitStep = S.mode==='roll' ? numOr(S.spec.metTP,0) : 0;
+      if(S.mode==='roll' && !(unitStep>0)) return '<div class="note warn">Cần nhập số mét thành phẩm hợp lệ để dò R mới (dạng cuộn).</div>';
+      // Item 5 (đợt 9): R mới đề xuất không được vượt năng lực máy — cap bằng chính giới hạn năng
+      // lực (đường kính/khối lượng) của các máy đang chọn ở bước "Chọn máy", tính lại từ đầu ở đây
+      // (giống cách renderStep5 tính Rt) chứ không suy ra từ R_chuẩn, để lấy đúng trần năng lực thật.
+      const ghepSelCap = DATA.LAM_MACHINES.filter(m=>S.machines.ghep.includes(m.name));
+      const chiaSelCap = DATA.SLIT_MACHINES.filter(m=>S.machines.chia.includes(m.name));
+      let capR = Infinity;
+      if(ghepSelCap.length || chiaSelCap.length){
+        const provisionalCap = S.mode==='roll'? computeBmaxAndR(calc) : null;
+        const needChiaCap = S.info.teDao || S.info.chiaNhan || (S.mode==='roll' && provisionalCap && provisionalCap.k>1);
+        const Ncap = Math.max(1, numOr(S.info.soNhan,1));
+        const rt = computeRt(calc, Infinity, ghepSelCap, chiaSelCap, needChiaCap, S.info.chiaNhan, Ncap);
+        capR = (rt==null) ? 0 : rt;
+      }
+      if(capR===0) return '<div class="note warn">Không tìm được R nào đáp ứng năng lực máy đã chọn — không thể đề xuất R mới. Hãy kiểm tra lại máy đã chọn ở bước "Chọn máy".</div>';
+      const suggestion = bestRForJoints(mtAuto, Xs, unitStep, capR);
+      if(!suggestion) return `<div class="note warn">Không tìm được đề xuất phù hợp trong giới hạn năng lực máy (tối đa ${fmt0(capR)} m).</div>`;
+      const curJoints = R>0 ? totalJointsFor(mtAuto, R, Xs) : null;
+      const better = curJoints!=null && suggestion.totalJ < curJoints;
+      return `<div class="result-line"><span class="lab">R hiện tại (mục 2, auto)</span><span class="val">${fmt0(R)} m — tổng ${curJoints!=null?curJoints:'—'} mối nối</span></div>
+      <div class="result-line"><span class="lab">R đề xuất (ít mối nối nhất, trong giới hạn năng lực máy)</span><span class="val val-emph">${fmt0(suggestion.R)} m — tổng ${suggestion.totalJ} mối nối</span></div>
+      ${better? `<div class="note" style="background:var(--good-soft);border-color:var(--good);color:var(--good)">✓ Tính theo R mới = ${fmt0(suggestion.R)} m sẽ giảm mối nối/phế so với R hiện tại. Bấm để xem kết quả tính riêng bên dưới (R ở mục 2 không đổi).
+        <button class="btn" style="margin-top:6px" id="applyJointR" data-r="${suggestion.R}">Tính theo R mới = ${fmt0(suggestion.R)} m</button></div>`
+      : `<div class="note">R hiện tại đã tối ưu hoặc tương đương — không cần đổi.</div>`}`;
+    })()}
+    ${(()=>{
+      // Item 9: applying the suggested R renders an independent calc block here — it never
+      // overwrites the automatic R/result used in section 2 above.
+      if(S._jointAltR==null) return '';
+      const altResult = countJoints(mtAuto, S._jointAltR, Xs);
+      if(!altResult) return '';
+      return `<h3 style="margin-top:20px">Kết quả tính riêng với R mới = ${fmt0(S._jointAltR)} m</h3>
+      <div class="grid2 divided">
+        <div>
+          <h3>Cuộn chẵn (${altResult.evenRolls} cuộn)</h3>
+          <div class="table-scroll"><table><thead><tr><th>Số mối nối</th><th>Số cuộn</th><th>Tỷ lệ %</th></tr></thead>
+          <tbody>${Object.keys(altResult.D1).sort((a,b)=>a-b).map(m=>`<tr><td>${m}</td><td>${altResult.D1[m]}</td><td>${fmt2(altResult.P[m])}%</td></tr>`).join('')||'<tr><td colspan="3">—</td></tr>'}</tbody></table></div>
+        </div>
+        <div>
+          <h3>Cuộn lẻ (${altResult.oddRolls} cuộn)</h3>
+          <div class="table-scroll"><table><thead><tr><th>Số mối nối</th><th>Số cuộn</th></tr></thead>
+          <tbody>${Object.keys(altResult.D2).sort((a,b)=>a-b).map(m=>`<tr><td>${m}</td><td>${altResult.D2[m]}</td></tr>`).join('')||'<tr><td colspan="2">—</td></tr>'}</tbody></table></div>
+        </div>
+      </div>
+      <div class="result-line"><span class="lab">Tổng số cuộn thành phẩm (⌈Mt/R mới⌉)</span><span class="val">${altResult.totalRolls}</span></div>
+      <button class="btn small" id="clearJointAltR" style="margin-top:8px">✕ Bỏ kết quả tính riêng này</button>`;
+    })()}
+  </div>`);
+  wrap.querySelector('#qtyUnit').onchange=(e)=>{ O.qtyUnit=e.target.value; render(); };
+  wrap.querySelector('#qtyVal').oninput=(e)=>{ O.qty=e.target.value; render(); };
+  wrap.querySelector('#toVal').oninput=(e)=>{ O.toDungSai=e.target.value; render(); };
+  const bcI = wrap.querySelector('#bcVal'); if(bcI) bcI.oninput=(e)=>{ O.bcOverride=e.target.value; render(); };
+  wrap.querySelectorAll('[data-jx]').forEach(inp=>{
+    inp.oninput=(e)=>{ jointState.X[inp.getAttribute('data-jx')] = e.target.value; render(); };
+  });
+  const applyJointR = wrap.querySelector('#applyJointR');
+  if(applyJointR) applyJointR.onclick=()=>{ S._jointAltR = numOr(applyJointR.getAttribute('data-r')); render(); };
+  const clearAlt = wrap.querySelector('#clearJointAltR');
+  if(clearAlt) clearAlt.onclick=()=>{ S._jointAltR = null; render(); };
+  return wrap;
+}
+
+/* ===================== Boot ===================== */
+render();
+})();
+
+</script>
+</body></html>
