@@ -13,15 +13,39 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Tải file Excel mới nhất từ OneDrive
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Cài trình duyệt ảo (Playwright)
         run: |
-          curl -L -f --retry 3 \
-            -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36" \
-            -H "Accept: */*" \
-            "${{ secrets.EXCEL_DOWNLOAD_URL }}" -o data.xlsx.new
+          npm init -y --silent
+          npm install --no-save playwright
+          npx playwright install --with-deps chromium
+
+      - name: Tải file Excel bằng trình duyệt ảo
+        env:
+          EXCEL_URL: ${{ secrets.EXCEL_DOWNLOAD_URL }}
+        run: |
+          node -e "
+          const { chromium } = require('playwright');
+          (async () => {
+            const browser = await chromium.launch();
+            const page = await browser.newPage();
+            const downloadPromise = page.waitForEvent('download', { timeout: 60000 });
+            await page.goto(process.env.EXCEL_URL, { waitUntil: 'load', timeout: 60000 }).catch(() => {});
+            const download = await downloadPromise;
+            await download.saveAs('data.xlsx.new');
+            await browser.close();
+          })().catch(e => { console.error(e); process.exit(1); });
+          "
 
       - name: So sánh và commit nếu có thay đổi
         run: |
+          if [ ! -s data.xlsx.new ]; then
+            echo "File tải về rỗng, huỷ."
+            exit 1
+          fi
           if [ ! -f data.xlsx ] || ! cmp -s data.xlsx.new data.xlsx; then
             mv data.xlsx.new data.xlsx
             git config user.name "github-actions[bot]"
